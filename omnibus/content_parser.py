@@ -25,7 +25,7 @@ class TestConfig:
 
 
 
-def parse_file(test_structure, test_files=set() content, working_directory=None, vars=None, global_url=None):
+def parse_file(test_structure, test_files=set(), working_directory=None, vars=None, global_url=None):
 	"""" Parse test content from single file """
 
 	tests_config = TestConfig()

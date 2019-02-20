@@ -149,7 +149,7 @@ def parse_random_text_generator(configuration):
 		max_length = length
 
 	if characters:
-		return factory_generate_text(legal_characters=character,min_length=min_length=,max_length=max_length)()
+		return factory_generate_text(legal_characters=character,min_length=min_length ,max_length=max_length)()
 	else :
 		return factory_generate_text(min_length=min_length, max_length= max_length)
 
