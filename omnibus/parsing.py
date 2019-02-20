@@ -1,6 +1,7 @@
 import os
 import sys
 import string
+from omnibus.util import generate_respons
 
 def flatten_dictionaries(input):
 	output = dict()
@@ -10,7 +11,7 @@ def flatten_dictionaries(input):
 				output.update(map)
 		else:  # Not a list of dictionaries
 			output = input
-	except Exception as (e):
+	except Exception as e:
 		return generate_respons(False,None,str(e))
 	else :
 		return generate_respons(True,output)
