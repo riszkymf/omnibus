@@ -39,3 +39,6 @@ def safe_to_bool(input):
     else:
         raise TypeError(
             'Input Object is not a boolean or string form of boolean!')
+
+def safe_substitute_unicode_template(templated_string, variable_map):
+    return string.Template(templated_string).safe_substitute(variable_map)
