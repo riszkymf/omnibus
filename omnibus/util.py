@@ -80,3 +80,16 @@ def generate_respons(status,data=None,message=None):
     }
     return respons
 
+def copy_dict(dictionary):
+	result = dict()
+	for key,value in dictionary.items():
+		result[key] = value
+	return result
+
+def convert(data):
+  if isinstance(data, bytes):      return data.decode()
+  if isinstance(data, (str, int)): return str(data)
+  if isinstance(data, dict):       return dict(map(convert, data.items()))
+  if isinstance(data, tuple):      return tuple(map(convert, data))
+  if isinstance(data, list):       return list(map(convert, data))
+  if isinstance(data, set):        return set(map(convert, data))
