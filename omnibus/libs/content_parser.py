@@ -46,7 +46,7 @@ class TestConfig:
   """ Test Set Configuration """
   timeout = DEFAULT_TIMEOUT
   retries = 0
-  print_bodies = True
+  print_bodies = False
   print_headers = False
   variable_binds = False
   generators = False

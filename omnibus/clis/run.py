@@ -8,7 +8,7 @@ from .base import Base
 class Run(Base):
     """
     Usage:
-        run (FILE) [-r | -c] [-u URL] [-m MOCK_FILE]
+        run (FILE) [-r | -c] [-u URL] [-m MOCK_FILE] [-p[--body|--head]] [-i]
 
     Options:
     -h --help                       Print Usage
@@ -16,7 +16,11 @@ class Run(Base):
     -c --curl                       Test REST Endpoint using curl(Not implemented)
     -u --url                        Global URL value
     FILE                            Test File or Folder
-    -m --mock MOCK_FILE                    Mock Data for test, must be yaml or json dictionary
+    -m --mock MOCK_FILE             Mock Data for test, must be yaml or json dictionary
+    -p                              Print respons' headers and bodies
+    --body                          Only print body
+    --head                          Only print head
+    -i --interactive                Interactive Mode
     """
 
     is_request = True   #Default using requests
@@ -24,6 +28,9 @@ class Run(Base):
     is_file = False
     is_dir = False
     url = None
+    print_bodies = False
+    print_headers = False
+    interactive = False
 
     def execute(self):
         files = list()
@@ -39,7 +46,8 @@ class Run(Base):
         else :
             self.is_dir = False
             self.is_file = True
-            if not self.args['FILE'].startswith('test_'):
+            f_tree =  self.args['FILE'].split('/')[-1]
+            if not f_tree.startswith('test_'):
                 print("Filename must be in 'test_{}' format".format(self.args['FILE']))
                 return 0
             else:
@@ -51,7 +59,19 @@ class Run(Base):
 
         if self.args['--url']:
             self.url = self.args['URL']
+
+        if self.args['-p']:
+            if self.args['--body']:
+                self.print_bodies = True
+            elif self.args['--head']:
+                self.print_headers = True
+            else:
+                self.print_headers = True
+                self.print_bodies = True
         
+        if self.args['--interactive']:
+            self.interactive = False
+
         if self.args['--mock']:
             f_name = self.args['MOCK_FILE']
             acceptable_mock = ['json','yaml','yml']
@@ -66,13 +86,22 @@ class Run(Base):
                     mock_vars = parsing.lowercase_keys(parsing.flatten_dictionaries(mock_vars)['data'])['data']
         else:
             mock_vars = None
-        
+
         for f in files:
             print(f)
             struct.append(load_yaml(f))
             paths.append(os.path.dirname(f))
         
+        tests = list()
+
         for t,p,f in zip(struct,paths,files):
-            tests = parse_file(t,f,p,vars=mock_vars,global_url=self.url)
-            failure = run_testsets(tests)
+            tests.append(parse_file(t,f,p,vars=mock_vars,global_url=self.url))
+            
+
+        for test in tests:
+            for t in test:
+                t.config.print_bodies = self.print_bodies
+                t.config.print_headers = self.print_headers
+                t.config.interactive = self.interactive
+            failure = run_testsets(test)
         
