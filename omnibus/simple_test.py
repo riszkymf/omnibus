@@ -6,7 +6,7 @@ from omnibus.libs import util
 
 
 base_url = 'http://127.0.0.1:6968/'
-test_file = ['test_rest.yml','test_copy.yml']
+test_file = ['omnibus/test_copy.yml']
 test_structure = list()
 paths = list()
 for i in test_file:
