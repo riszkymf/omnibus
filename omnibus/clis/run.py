@@ -8,7 +8,7 @@ from .base import Base
 class Run(Base):
     """
     Usage:
-        run (FILE) [-r | -c] [-u URL] [-m MOCK_FILE] [-p[--body|--head]] [-i]
+        run (FILE) [-r | -c] [-u URL] [-m MOCK_FILE] [-p[--body|--head]] [-i] [-d]
 
     Options:
     -h --help                       Print Usage
@@ -20,6 +20,7 @@ class Run(Base):
     -p                              Print respons' headers and bodies
     --body                          Only print body
     --head                          Only print head
+    -d --dump                       Dump Log
     -i --interactive                Interactive Mode
     """
 
@@ -30,6 +31,7 @@ class Run(Base):
     url = None
     print_bodies = False
     print_headers = False
+    is_dumped = False
     interactive = False
 
     def execute(self):
@@ -87,8 +89,10 @@ class Run(Base):
         else:
             mock_vars = None
 
+        if self.args['--dump']:
+            self.is_dumped = True
+
         for f in files:
-            print(f)
             struct.append(load_yaml(f))
             paths.append(os.path.dirname(f))
         
@@ -103,5 +107,6 @@ class Run(Base):
                 t.config.print_bodies = self.print_bodies
                 t.config.print_headers = self.print_headers
                 t.config.interactive = self.interactive
+                t.config.is_dumped = self.is_dumped
             failure = run_testsets(test)
         
