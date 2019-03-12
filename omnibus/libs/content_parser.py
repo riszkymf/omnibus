@@ -6,14 +6,14 @@ import requests
 import logging
 import traceback
 
-from omnibus.libs import generator
-from omnibus.libs import parsing
-from omnibus.libs import util
-from omnibus.libs import binding
-from omnibus.libs import validators
-from omnibus.libs.tests import Test, DEFAULT_TIMEOUT
-from omnibus.libs.binding import Context
-from omnibus.libs.validators import Failure
+from . import generator
+from . import parsing
+from . import util
+from . import binding
+from . import validators
+from .tests import Test, DEFAULT_TIMEOUT
+from .binding import Context
+from .validators import Failure
 
 DIR_LOCK = threading.RLock()
 
@@ -59,6 +59,11 @@ class TestConfig:
     is_dumped = False
     interactive = False
     skip_term_colors = False
+    is_flask = True
+    flask_app = None
+    is_remote = False
+    is_request = False
+    is_curl = False
 
 
     def __str__(self):
@@ -74,13 +79,12 @@ class TestSet:
         self.tests = list()
 
     def __str__(self):
-        return json.dumps(self, default=self_to_json)
+        return json.dumps(self, default=safe_to_json)
 
 
 
 def parse_file(test_structure, test_files=set(), working_directory=None, vars=None, global_url=None):
     """" Parse test content from single file """
-
     test_out = list()
     test_config = TestConfig()
     tests_out = list()
@@ -101,6 +105,9 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
                 if key == 'config' or key == 'configuration':
                     if 'url' in parsing.flatten_dictionaries(node[key])['data']:
                         global_url = parsing.flatten_dictionaries(node[key])['data']['url']
+                    if 'flask' in parsing.flatten_dictionaries(node[key])['data']:
+                        flaskapp = parsing.flatten_dictionaries(node[key])['data']['flask']
+                        print(flaskapp)
                     test_config = parse_configuration(
                     node[key], base_config=test_config)
                 elif key == 'test':
@@ -158,7 +165,14 @@ def parse_configuration(node, base_config=None):
                 gen = generator.parse_generator(generator_config)
                 gen_map[str(generator_name)]= gen
             test_config.generators = gen_map
-    
+        elif key == 'flask':
+            temp = parsing.flatten_dictionaries(value)['data']
+            path = temp['path']
+            app_name = temp['name']
+            try:
+                test_config.flask_app = getattr(__import__(path),app_name)
+            except Exception as e:
+                print('\033[91m ERROR ON IMPORTING FLASK APPLICATION, ERROR MESSAGE : {}\033[0m'.format(str(e)))
     return test_config
 
 
@@ -199,32 +213,48 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
 
     mytest.update_context_before(my_context)
     templated_test = mytest.realize(my_context)
-    request = templated_test.configure_request(
-        timeout=test_config.timeout, context=my_context,request_handler=request_handler)
-
-
-
-    result = TestResponse()
-    result.test = templated_test
-    session_handler = requests.Session()
-
+  
     if test_config.interactive or (test_config.print_bodies or test_config.print_headers):
         print("--------------------------------------------")
         print("Test Name\t:\t{}\n".format(mytest.name))
         print("--------------------------------------------")
-    try:
-        respons = session_handle(request,test_config=test_config,session_handle=session_handler)
-    except Exception as e:
-        trace = traceback.format_exc()
-        result.failures.append(Failure(message="Exception Happens: {}".format(str(e)),
-        details=trace, failure_type=validators.FAILURE_REQUESTS_EXCEPTION))
-        result.passed = False
+        
+        ## Test using requests, currently cant use coverage
+    if test_config.is_remote:
+        if test_config.is_request:
+            request = templated_test.configure_request(
+                timeout=test_config.timeout, context=my_context,request_handler=request_handler)
+            result = TestResponse()
+            result.test = templated_test
+            session_handler = requests.Session()
+            try:
+                respons = session_handle(request,test_config=test_config,session_handle=session_handler)
+            except Exception as e:
+                trace = traceback.format_exc()
+                result.failures.append(Failure(message="Exception Happens: {}".format(str(e)),
+                details=trace, failure_type=validators.FAILURE_REQUESTS_EXCEPTION))
+                result.passed = False
+            ## Retrieve Values
+            result.body = util.convert(respons.content)
+            result.response_headers = respons.headers
+            result.response_code = respons.status_code
+            respons_code = respons.status_code
 
-  ## Retrieve Values
-    result.body = util.convert(respons.content)
-    result.response_headers = respons.headers
-    result.response_code = respons.status_code
-    respons_code = respons.status_code
+    elif test_config.is_flask:
+        app = test_config.flask_app()
+        respons = templated_test.configure_flask_test(context=my_context,app=app)
+        headers = dict()
+        result = TestResponse()
+        result.test = templated_test
+        for key,val in list(respons.headers):
+            headers[key] = val
+        result.response_headers = headers
+        result.response_code = respons.status_code
+        respons_code = respons.status_code
+        ##convert body
+        #result.body = json.loads(respons.data.decode('utf8'))               
+        result.body = util.convert(respons.data)
+
 
     if respons_code in mytest.expected_status:
         result.passed = True        
@@ -285,6 +315,7 @@ def run_testsets(testsets):
     group_failure_counts = dict()
     total_failures = 0
     myinteractive = False
+    
     requests_handler = requests.Request()
 
     for testset in testsets:

@@ -4,12 +4,14 @@ import copy
 import json
 import requests
 import sys
+import flask
 from urllib.parse import urljoin
-from omnibus.libs import parsing
-from omnibus.libs import validators
-from omnibus.libs.content_handle import ContentHandler
-from omnibus.libs.util import convert
-from omnibus.libs.six import *
+from flask.testing import FlaskClient
+from . import parsing
+from . import validators
+from .content_handle import ContentHandler
+from .util import convert
+from .six import *
 from past.builtins import basestring
 
 from requests.auth import *
@@ -36,8 +38,9 @@ DEFAULT_TIMEOUT = 10
 
 HTTP_METHODS = {u'GET': 'GET',
            u'PUT': 'PUT',
-           u'POST': 'DELETE',
-           u'PATCH': 'PATCH'}
+           u'POST': 'POST',
+           u'PATCH': 'PATCH',
+           u'DELETE': 'DELETE'}
 
 def coerce_string_to_ascii(val):
     if isinstance(val, text_type):
@@ -80,7 +83,7 @@ def coerce_list_of_ints(val):
   if isinstance(val,list):
     return [int(x) for x in val]
   else:
-    return [int(val)] 
+    return [int(val)]
 
 class Test(object):
   """ Describe a REST test """
@@ -101,6 +104,8 @@ class Test(object):
   auth_password = None
   auth = None
   params = None
+  endpoint = None
+  json_body = False
 
   templates = None
 
@@ -275,6 +280,35 @@ class Test(object):
   def __str__(self):
     return json.dumps(self, default=parsing.safe_to_json)
 
+  def configure_flask_test(self,context=None,app=None):
+    if not app:
+      raise ValueError("Flask application is not called")
+    
+    with app.test_client() as client:
+      print("METHOD == {}".format(self.method))
+      print("ENDPOINT == {}".format(self.endpoint))
+
+      endpoint = self.endpoint
+      if 'Content-Type' in self.headers:
+        content_type = self.headers['Content-Type']
+        print("Content == {}".format(content_type))
+        if 'json' in self.headers['Content-Type']:
+          self.json_body = True
+          if self.body :
+            body = self.body
+      if self.method == 'GET':
+        result = client.get(endpoint, content_type = content_type, headers=self.headers)
+      elif self.method == 'POST':
+        result = client.post(endpoint,data=body, content_type= content_type, headers=self.headers)
+      elif self.method == 'DELETE':
+        result = client.delete(endpoint, content_type=content_type,headers=self.headers)
+      elif self.method == 'UPDATE':
+        result = client.update(endpoint, content_type=content_type,headers=self.headers)
+      elif self.method == 'PUT':
+        result = client.put(endpoint, content_type=content_type,headers=self.headers)
+
+      return result
+
 
   def configure_request(self,timeout=DEFAULT_TIMEOUT,context=None,request_handler=None):
 
@@ -348,6 +382,7 @@ class Test(object):
         continue
 
       if configelement == u'endpoint':
+        mytest.endpoint = configvalue
         if mytest.local_url:
           url_val = mytest.local_url
         else:
@@ -368,7 +403,7 @@ class Test(object):
           val = parsing.lowercase_keys(configvalue)['data']
           val = val[u'template']
           assert isinstance(val,str) or isinstance(val,int)
-          mytests.local_url = str(val)
+          mytest.local_url = str(val)
         else:
           assert isinstance(configvalue,str) or isinstance(configvale,int)
           mytest.local_url = str(configvalue)
