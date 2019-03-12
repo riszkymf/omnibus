@@ -4,8 +4,8 @@ import os
 import sys
 import json
 
-from omnibus.libs import parsing
-from omnibus.libs.parsing import flatten_dictionaries, lowercase_keys, safe_to_bool
+from . import parsing
+from .parsing import flatten_dictionaries, lowercase_keys, safe_to_bool
 
 
 INT32_MAX_VALUE = 2147483647

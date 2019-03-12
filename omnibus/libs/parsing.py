@@ -1,7 +1,7 @@
 import os
 import sys
 import string
-from omnibus.libs.util import generate_respons, convert
+from .util import generate_respons, convert
 
 
 def safe_to_json(in_obj):

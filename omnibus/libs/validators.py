@@ -9,8 +9,8 @@ import sys
 import jmespath
 import json
 
-from omnibus.libs import parsing
-from omnibus.libs.util import convert
+from . import parsing
+from .util import convert
 
 
 """
