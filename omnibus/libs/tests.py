@@ -285,13 +285,10 @@ class Test(object):
       raise ValueError("Flask application is not called")
     
     with app.test_client() as client:
-      print("METHOD == {}".format(self.method))
-      print("ENDPOINT == {}".format(self.endpoint))
 
       endpoint = self.endpoint
       if 'Content-Type' in self.headers:
         content_type = self.headers['Content-Type']
-        print("Content == {}".format(content_type))
         if 'json' in self.headers['Content-Type']:
           self.json_body = True
           if self.body :

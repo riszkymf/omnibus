@@ -34,3 +34,11 @@ var = {"mock_zone": 'test.com'}
 tests = parse_file(test_structure,test_file,vars=var,global_url=base_url)
 result = run_testsets(tests)
 
+from omnibus.libs.util import *
+import os
+cwd = os.getcwd()
+path = os.path.join(cwd,'tests')
+ignore = 'tests/ignorejuga/test_4.yml'
+ignore = os.path.join(cwd,ignore)
+ignore = [ignore]
+get_all(path,ignore)

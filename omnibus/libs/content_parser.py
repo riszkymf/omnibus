@@ -107,7 +107,6 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
                         global_url = parsing.flatten_dictionaries(node[key])['data']['url']
                     if 'flask' in parsing.flatten_dictionaries(node[key])['data']:
                         flaskapp = parsing.flatten_dictionaries(node[key])['data']['flask']
-                        print(flaskapp)
                     test_config = parse_configuration(
                     node[key], base_config=test_config)
                 elif key == 'test':
@@ -170,9 +169,14 @@ def parse_configuration(node, base_config=None):
             path = temp['path']
             app_name = temp['name']
             try:
-                test_config.flask_app = getattr(__import__(path),app_name)
+                try:
+                    test_config.flask_app = getattr(__import__(path),app_name)
+                except:
+                    sys.path.append(os.getcwd())
+                    test_config.flask_app = getattr(__import__(path),app_name)
             except Exception as e:
                 print('\033[91m ERROR ON IMPORTING FLASK APPLICATION, ERROR MESSAGE : {}\033[0m'.format(str(e)))
+                print('\033[91m CHECK YOUR FLASK APP ON YOUR TEST CONFIGURATION \033[0m')
     return test_config
 
 
