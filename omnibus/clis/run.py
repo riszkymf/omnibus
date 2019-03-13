@@ -24,7 +24,8 @@ class Run(Base):
     -i --interactive                Interactive Mode
     """
 
-    is_request = True   #Default using requests
+    is_flask = True         #Default flask app
+    is_request = False   
     is_curl    = False
     is_file = False
     is_dir = False
@@ -45,6 +46,7 @@ class Run(Base):
             files = collect_file(self.args['FILE'])
             if len(files) == 0 : 
                 print("No test file is found")
+                return 0
         else :
             self.is_dir = False
             self.is_file = True
@@ -65,20 +67,21 @@ class Run(Base):
         if self.args['-p']:
             if self.args['--body']:
                 self.print_bodies = True
-            elif self.args['--head']:
+            if self.args['--head']:
                 self.print_headers = True
             else:
                 self.print_headers = True
                 self.print_bodies = True
         
         if self.args['--interactive']:
-            self.interactive = False
+            self.interactive = True
 
         if self.args['--mock']:
             f_name = self.args['MOCK_FILE']
             acceptable_mock = ['json','yaml','yml']
             if f_name.split('.')[1].lower() not in acceptable_mock:
                 print("Mock Data File must be json or yaml file type")
+                f_name = None
             else:
                 ext = f_name.split('.')[1].lower()
                 if ext == 'json':
