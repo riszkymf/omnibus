@@ -3,9 +3,10 @@
   - testset: "banyak"
   - scope: configuration working scope
   - url: "http://127.0.0.1:6968"
+  - flask : {path: app , name: create_app}
 - test: 
   - name: "TestInputZone"
-  - endpoint: "/api/zone"
+  - endpoint: "api/zone"
   - method: "POST"
   - body: {template: '{"insert":{"fields":{"nm_zone": "$mock_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
@@ -15,7 +16,7 @@
       - assertTrue: {jmespath: 'message.id', test: exists }
 - test: 
   - name: "TestSearchZone"
-  - endpoint: "/api/zone"
+  - endpoint: "api/zone"
   - method: "POST"
   - body: {template: '{"where":{"tags":{"id_zone": "$id_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
@@ -23,7 +24,7 @@
       - assertTrue: {jmespath: 'message', test: exists }
 - test: 
   - name: "TestSynchronizeZone"
-  - endpoint: "/api/sendcommand"
+  - endpoint: "api/sendcommand"
   - method: "POST"
   - body: {template: '{"conf-insert":{"tags":{"id_zone":"$id_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
@@ -31,7 +32,7 @@
       - assertTrue: {jmespath: 'message', test: exists }
 - test: 
   - name: "TestGetTTL"
-  - endpoint: "/api/zone"
+  - endpoint: "api/zone"
   - method: "POST"
   - body: '{"where":{"tags":{"nm_ttl": "1800"}}}'
   - headers: {'Content-Type' : 'application/json'}
@@ -41,7 +42,7 @@
       - assertTrue: {jmespath: 'message', test: exists }
 - test:
   - name: "TestGetRecordId"
-  - endpoint: "/api/record"
+  - endpoint: "api/record"
   - method: "POST"
   - body: '{"where":{"tags":{"nm_type": "CNAME"}}}'
   - headers: {'Content-Type' : 'application/json'}
@@ -51,7 +52,7 @@
       - assertTrue: {jmespath: 'message', test: exists}
 - test: 
   - name: "TestRemoveZone"
-  - endpoint: "/api/zone"
+  - endpoint: "api/zone"
   - method: "POST"
   - body: {template: '{"remove":{"tags":{"id_zone":"$id_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
