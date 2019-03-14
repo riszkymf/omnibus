@@ -112,3 +112,4 @@ test.yml
 test_rest.yml
 yaml_dump.yml
 os
+.coveragec
