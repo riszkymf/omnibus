@@ -45,9 +45,9 @@ def safe_to_bool(input):
       If it's not a boolean or string that matches 'false' or 'true' when ignoring case, throws an exception """
     if isinstance(input, bool):
         return input
-    elif isinstance(input, basestring) and input.lower() == u"false":
+    elif isinstance(input, str) and input.lower() == u"false":
         return False
-    elif isinstance(input, basestring) and input.lower() == u"true":
+    elif isinstance(input, str) and input.lower() == u"true":
         return True
     else:
         raise TypeError("Input Object is not a boolean or string form of boolean!")
@@ -58,11 +58,9 @@ def safe_substitute_unicode_template(templated_string, variable_map):
 
 
 def encode_unicode_bytes(my_string):
-    """ Shim function, converts Unicode to UTF-8 encoded bytes regardless of the source format
-        Intended for python 3 compatibility mode, and b/c PyCurl only takes raw bytes
-    """
+    if not isinstance(my_string, str):
+        my_string = convert(my_string)
     if isinstance(my_string, str):
-        return my_string.encode('utf-8')
-    elif isinstance(my_string, bytes):
-        return my_string
+        return my_string.encode('utf8')
+
 
