@@ -3,7 +3,7 @@ import os
 import sys
 from coverage import Coverage
 
-from omnibus.libs.util import collect_file,load_yaml,load_json,get_all,get_path,get_path_files
+from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files
 from omnibus.libs.content_parser import parse_file,run_testsets
 from omnibus.libs import parsing
 
@@ -73,11 +73,11 @@ class Cov(Base):
         else:
             self.f_ignore = list()
             
-        self.f_tests = get_path(cwd,self.args['FILE'])
-        if os.path.isdir(self.f_tests):
+        path = get_path(cwd,self.args['FILE'])
+        if os.path.isdir(path):
             self.is_dir = True
             self.is_file = False
-            self.f_tests = get_all(self.f_tests,self.f_ignore)
+            self.f_tests = get_all(path,self.f_ignore)
             if len(self.f_tests) == 0:
                 print("No test file is found")
                 return 0
@@ -93,7 +93,7 @@ class Cov(Base):
                     print("Ignored file and test file is the same file")
                     return 0
                 else:
-                    self.f_tests.append(self.args['FILE'])
+                    self.f_tests.append(path)
 
         if self.args['--print']:
             if self.args['--pb']:

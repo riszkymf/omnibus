@@ -1,5 +1,5 @@
 from docopt import docopt
-from omnibus.libs.util import collect_file,load_yaml,load_json
+from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files
 from omnibus.libs.content_parser import parse_file,run_testsets
 from omnibus.libs import parsing
 import os
@@ -23,6 +23,7 @@ class Run(Base):
     --head                          Only print head
     -d --dump                       Dump Log
     -i --interactive                Interactive Mode
+    --ignore                        Ignore test files or directories
     """
 
     is_flask = True         #Default flask app
@@ -36,29 +37,44 @@ class Run(Base):
     is_dumped = False
     interactive = False
     is_remote = False
+    f_ignore = list()
 
     def execute(self):
-        print(self.args)
         files = list()
         struct = list()
         paths = list() 
         cwd = os.getcwd()
-        if os.path.isdir(os.path.join(cwd,self.args['FILE'])):
+
+
+        if self.args['--ignore']:
+            self.args['--ignore'] = get_path(cwd,self.args['--ignore'])
+            self.f_ignore = [self.args['--ignore']]
+        else:
+            self.f_ignore = list()
+            
+        path = get_path(cwd,self.args['FILE'])
+        if os.path.isdir(path):
             self.is_dir = True
             self.is_file = False
-            files = collect_file(self.args['FILE'])
-            if len(files) == 0 : 
+            files = get_all(path,self.f_ignore)
+            if len(files) == 0:
                 print("No test file is found")
                 return 0
-        else :
+        else:
             self.is_dir = False
             self.is_file = True
-            f_tree =  self.args['FILE'].split('/')[-1]
+            f_tree = self.args['FILE'].split('/')[-1]
             if not f_tree.startswith('test_'):
                 print("Filename must be in 'test_{}' format".format(self.args['FILE']))
                 return 0
             else:
-                files.append(self.args['FILE'])
+                if self.args['FILE'] in self.f_ignore:
+                    print("Ignored file and test file is the same file")
+                    return 0
+                else:
+                    files.append(path)
+
+        
         if self.args['--requests']:
             self.is_request = True
             self.is_remote = True
