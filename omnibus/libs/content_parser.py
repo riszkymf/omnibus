@@ -4,18 +4,24 @@ import threading
 import json
 import requests
 import logging
+import pycurl
 import traceback
 
 from . import generator
 from . import parsing
 from . import util
 from . import binding
+from .six import text_type
 from . import validators
 from .tests import Test, DEFAULT_TIMEOUT
 from .binding import Context
 from .validators import Failure
+from email import message_from_string
+
+from io import BytesIO as MyIO
 
 DIR_LOCK = threading.RLock()
+HEADER_ENCODING ='ISO-8859-1' # Per RFC 2616
 
 LOGGING_LEVELS = {"debug" : logging.DEBUG,
                   "info" : logging.INFO,
@@ -180,6 +186,26 @@ def parse_configuration(node, base_config=None):
     return test_config
 
 
+
+def parse_headers(header_string):
+    """ Parse a header-string into individual headers
+        Implementation based on: http://stackoverflow.com/a/5955949/95122
+        Note that headers are a list of (key, value) since duplicate headers are allowed
+
+    """
+    # First line is request line, strip it out
+    if not header_string:
+        return list()
+    request, headers = header_string.split('\r\n', 1)
+    if not headers:
+        return list()
+    header_msg = message_from_string(headers)
+    # Note: HTTP headers are *case-insensitive* per RFC 2616
+    return [(k.lower(), v) for k, v in header_msg.items()]
+
+
+
+
 def safe_to_json(in_obj):
     """ Safely get dict from object if present for json dumping """
     if isinstance(in_obj, bytearray):
@@ -231,6 +257,17 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             result = TestResponse()
             result.test = templated_test
             session_handler = requests.Session()
+            if test_config.interactive:
+                print("==========================================")
+                print("%s" % mytest.name)
+                print("------------------------------------------")
+                print("REQUEST:")
+                print("%s %s" %(templated_test.method, templated_test.url))
+                print("HEADERS:")
+                print("%s"%(templated_test.headers))
+                if mytest.body is not None:
+                    print("\n BODY:\n %s" %templated_test.body)
+                input("Press ENTER to continue (%d): " %(mytest.delay))
             try:
                 respons = session_handle(request,test_config=test_config,session_handle=session_handler)
             except Exception as e:
@@ -242,10 +279,111 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             result.body = util.convert(respons.content)
             result.response_headers = respons.headers
             result.response_code = respons.status_code
-            respons_code = respons.status_code
+            response_code = respons.status_code
+    elif test_config.is_curl:
+        curl_handle = pycurl.Curl()
+        curl = templated_test.configure_curl(
+            timeout=test_config.timeout, context=my_context,curl_handle=curl_handle)
+        result = TestResponse()
+        headers = MyIO()
+        body = MyIO()
+        curl.setopt(pycurl.WRITEFUNCTION, body.write)
+        curl.setopt(pycurl.HEADERFUNCTION, headers.write)
+        if test_config.verbose:
+            curl.setopt(pycurl.VERBOSE, True)
+        if test_config.ssl_insecure:
+            curl.setopt(pycurl.SSL_VERIFYPEER,0)
+            curl.setopt(pycurl.SSL_VERIFYHOST,0)
+        result.passed = None
+
+        if test_config.interactive:
+            print("==========================================")
+            print("%s" % mytest.name)
+            print("------------------------------------------")
+            print("REQUEST:")
+            print("%s %s" %(templated_test.method, templated_test.url))
+            print("HEADERS:")
+            print("%s"%(templated_test.headers))
+            if mytest.body is not None:
+                print("\n BODY:\n %s" %templated_test.body)
+            input("Press ENTER to continue (%d): " %(mytest.delay))
+
+        try:
+            curl.perform()
+        except Exception as e:
+            trace = traceback.format_exc()
+            result.failures.append(Failure(message="Curl Exception: {}".format(str(e))))
+            result.passed = False
+            curl.close()
+            return result
+
+        result.body = body.getvalue()
+        body.close()
+        result.response_headers = text_type(headers.getvalue(), HEADER_ENCODING)
+        headers.close()
+
+        response_code = curl.getinfo(pycurl.RESPONSE_CODE)
+        result.response_code = response_code
+
+        if response_code in mytest.expected_status:
+            result.passed = True
+        else:
+            result.passed = False
+            failure_message = "Invalid HTTP Response Code: Code {} is not expected".format(response_code)
+            result.failures.append(Failure  (message=failure_message,details=None,failure_type=validators.FAILURE_INVALID_RESPONSE))
+        try:
+            result.response_headers = parse_headers(result.response_headers)
+        except Exception as e:
+            trace = traceback.format_exc()
+            result.failures.append(Failure(message="Header parsing exception: {0}".format(
+                e), details=trace, failure_type=validators.FAILURE_TEST_EXCEPTION))
+            result.passed = False
+            curl.close()
+            return result
+
+        # print str(test_config.print_bodies) + ',' + str(not result.passed) + ' ,
+        # ' + str(test_config.print_bodies or not result.passed)
+
+        head = result.response_headers
+
+        # execute validator on body
+        if result.passed is True:
+            body = result.body
+            if mytest.validators is not None and isinstance(mytest.validators, list):
+                logger.debug("executing this many validators: " +
+                            str(len(mytest.validators)))
+                failures = result.failures
+                for validator in mytest.validators:
+                    validate_result = validator.validate(
+                        body=body, headers=head, context=my_context)
+                    if not validate_result:
+                        result.passed = False
+                    # Proxy for checking if it is a Failure object, because of
+                    # import issues with isinstance there
+                    if hasattr(validate_result, 'details'):
+                        failures.append(validate_result)
+                    # TODO add printing of validation for interactive mode
+            else:
+                logger.debug("no validators found")
+
+            # Only do context updates if test was successful
+            mytest.update_context_after(result.body, head, my_context)
+
+        
 
     elif test_config.is_flask:
         app = test_config.flask_app()
+        if test_config.interactive:
+            print("==========================================")
+            print("%s" % mytest.name)
+            print("------------------------------------------")
+            print("REQUEST:")
+            print("%s %s" %(templated_test.method, templated_test.url))
+            print("HEADERS:")
+            print("%s"%(templated_test.headers))
+            if mytest.body is not None:
+                print("\n BODY:\n %s" %templated_test.body)
+            input("Press ENTER to continue (%d): " %(mytest.delay))
         respons = templated_test.configure_flask_test(context=my_context,app=app)
         headers = dict()
         result = TestResponse()
@@ -254,17 +392,17 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             headers[key] = val
         result.response_headers = headers
         result.response_code = respons.status_code
-        respons_code = respons.status_code
+        response_code = respons.status_code
         ##convert body
         #result.body = json.loads(respons.data.decode('utf8'))               
         result.body = util.convert(respons.data)
 
 
-    if respons_code in mytest.expected_status:
+    if response_code in mytest.expected_status:
         result.passed = True        
     else:
         result.passed = False
-        failure_message = "Invalid HTTP response code, {} is not in expected status code".format(respons_code)
+        failure_message = "Invalid HTTP response code, {} is not in expected status code".format(response_code)
         result.failures.append(Failure(message=failure_message,details=None,failure_type=validators.FAILURE_INVALID_RESPONSE))
 
     head = result.response_headers
@@ -346,7 +484,6 @@ def run_testsets(testsets):
 
             result = run_test(test,test_config=myconfig,context=context,request_handler=requests_handler)
             result.body = None
-
             if not result.passed:
                 logger.error('Test Failed: ' + test.name + " URL=" + result.test.url +
                 " Group=" + test.group + " HTTP Status Code: " + str(result.response_code))

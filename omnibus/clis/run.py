@@ -8,16 +8,17 @@ from .base import Base
 class Run(Base):
     """
     Usage:
-        run (FILE) [-r | -c] [-u URL] [-m MOCK_FILE] [-p[--body|--head]] [-i] [-d]
+        run (FILE) [options]
 
     Options:
     -h --help                       Print Usage
     -r --requests                   Test REST Endpoint using Requests
     -c --curl                       Test REST Endpoint using curl(Not implemented)
+    -f --flask                      Test RESTful Flask Endpoint
     -u --url                        Global URL value
     FILE                            Test File or Folder
     -m --mock MOCK_FILE             Mock Data for test, must be yaml or json dictionary
-    -p                              Print respons' headers and bodies
+    -p --print                      Print respons' headers and bodies
     --body                          Only print body
     --head                          Only print head
     -d --dump                       Dump Log
@@ -34,8 +35,10 @@ class Run(Base):
     print_headers = False
     is_dumped = False
     interactive = False
+    is_remote = False
 
     def execute(self):
+        print(self.args)
         files = list()
         struct = list()
         paths = list() 
@@ -56,15 +59,18 @@ class Run(Base):
                 return 0
             else:
                 files.append(self.args['FILE'])
-        
-        if self.args['--curl']:
+        if self.args['--requests']:
+            self.is_request = True
+            self.is_remote = True
+        elif self.args['--flask']:
+            self.is_flask = True
+        elif self.args['--curl']:
             self.is_curl = True
-            self.is_request = False
 
         if self.args['--url']:
             self.url = self.args['URL']
 
-        if self.args['-p']:
+        if self.args['--print']:
             if self.args['--body']:
                 self.print_bodies = True
             if self.args['--head']:
@@ -72,6 +78,11 @@ class Run(Base):
             else:
                 self.print_headers = True
                 self.print_bodies = True
+        else:
+            if self.args['--body']:
+                self.print_bodies = True
+            if self.args['--head']:
+                self.print_headers = True
         
         if self.args['--interactive']:
             self.interactive = True
@@ -111,5 +122,8 @@ class Run(Base):
                 t.config.print_headers = self.print_headers
                 t.config.interactive = self.interactive
                 t.config.is_dumped = self.is_dumped
+                t.config.is_curl = self.is_curl
+                t.config.is_request = self.is_request
+                t.config.is_remote = self.is_remote
             failure = run_testsets(test)
         
