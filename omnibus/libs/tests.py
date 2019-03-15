@@ -58,11 +58,11 @@ def coerce_string_to_ascii(val):
 
 def coerce_http_method(val):
     myval = val
+    if isinstance(myval, bytes):
+        myval = convert(myval)
     if not isinstance(myval, str) or len(val) == 0:
         raise TypeError(
             "Invalid HTTP method name: input {} is not a string or is not stated".format(val))
-    if isinstance(myval, bytes):
-        myval = convert(myval)
     return myval.upper()
 
 

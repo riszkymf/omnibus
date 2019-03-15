@@ -11,7 +11,7 @@ import json
 
 from . import parsing
 from .util import convert
-
+from .six import text_type
 
 """
 Validator/Extractor logic for utility use
@@ -105,8 +105,8 @@ def safe_length(var):
     return output
 
 
-def regex_compare(input, regex):
-    return bool(re.search(regex, input))
+def regex_compare(rinput, regex):
+    return bool(re.search(regex, rinput))
 
 
 FAILURE_INVALID_RESPONSE = "Invalid HTTP Response Code"
@@ -128,9 +128,7 @@ class Failure(object):
     details = None
     validator = None
 
-    def __nonzero__(self):
-        """ Failure objects test as False, simplifies coding with them """
-        return False
+
 
     def __bool__(self):
         """ Failure objects test as False, simplifies coding with them """
@@ -287,7 +285,8 @@ class HeaderExtractor(AbstractExtractor):
         low = query.lower()
         # Value for all matching key names
         # extracted = [y[1] for y in filter(lambda x: x[0] == low, headers)]
-        extracted = list(filter(lambda x: x.lower() == low, headers))
+        extracted = list(y[1] for y in filter(lambda x: x[0].lower() == low, headers))
+        print(extracted)
 
         if len(extracted) == 0:
             raise ValueError("Invalid header name {}".format(query))
@@ -409,8 +408,8 @@ class ComparatorValidator(AbstractValidator):
             expected_val = self.expected
 
         # Handle a bytes-based body and a unicode expected value seamlessly
-        if isinstance(extracted_val, bytes) and isinstance(expected_val, text_type):
-            expected_val = convert(expected_val)
+        if isinstance(extracted_val, bytes) and isinstance(expected_val, str):
+            expected_val = expected_val.encode('utf-8')
         comparison = self.comparator(extracted_val, expected_val)
 
         if not comparison:
