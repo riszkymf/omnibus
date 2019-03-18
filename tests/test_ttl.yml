@@ -1,0 +1,35 @@
+- config:
+  - desc: configuration for test set
+  - testset: "TTL Endpoint"
+  - scope: configuration working scope
+  - group: "TTL Endpoint"
+  - url: "http://127.0.0.1:6968"
+  - endpoint: "api/ttl"
+  - headers: {'Content-Type': 'application/json'}
+  - flask : {path: app , name: create_app}
+  - variable_binds: {'mock_ttl': '6600'}
+
+- test: 
+  - name: "TestInputTTL"
+  - method: "POST"
+  - body: {template: '{"insert":{"fields":{"nm_ttl": "$mock_ttl"}}}'}
+  - extract_binds: 
+      - 'id_ttl' : {'jmespath' : 'message.id'}
+  - validators:
+      - assertTrue: {jmespath: 'message.id', test: exists }
+- test:
+  - name: "TestGetTTL"
+  - method: "GET"
+  - validators:
+      - compare: {jmespath: 'data[*].nm_ttl', comparator: 'contains', expected: "6600"}
+- test:
+  - name: "TestSearchTTL"
+  - method: "POST"
+  - body: {template: '{"where":{"tags":{"nm_ttl":"$mock_ttl"}}}'}
+  - validators:
+      - compare: {jmespath: 'data[0].nm_ttl', comparator: 'eq', expected: "6600"}
+
+- test:
+  - name: "TestDeleteTTL"
+  - method: "POST"
+  - body: {template: '{"remove":{"tags":{"id_ttl":"$id_ttl"}}}'}
