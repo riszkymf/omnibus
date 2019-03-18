@@ -3,7 +3,7 @@
   - testset: "banyak"
   - scope: configuration working scope
   - url: "http://127.0.0.1:6968"
-  - flask : {path: app , name: create_app}
+  - flask : {path: app_test.API.app , name: create_app}
 - test: 
   - name: "TestInputZone"
   - endpoint: "api/zone"
