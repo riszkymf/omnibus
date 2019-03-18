@@ -70,6 +70,9 @@ class TestConfig:
     is_remote = False
     is_request = False
     is_curl = False
+    endpoint = None
+    global_headers = None
+    filename = None
 
 
     def __str__(self):
@@ -95,7 +98,8 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
     test_config = TestConfig()
     tests_out = list()
     testsets = list()
-
+    url = None
+    global_endpoint = None
 
     if working_directory is None:
         working_directory = os.path.abspath(os.getcwd())
@@ -113,12 +117,17 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
                         global_url = parsing.flatten_dictionaries(node[key])['data']['url']
                     if 'flask' in parsing.flatten_dictionaries(node[key])['data']:
                         flaskapp = parsing.flatten_dictionaries(node[key])['data']['flask']
+                    if 'endpoint' in parsing.flatten_dictionaries(node[key])['data']:
+                        global_endpoint= parsing.flatten_dictionaries(node[key])['data']['endpoint']
                     test_config = parse_configuration(
                     node[key], base_config=test_config)
                 elif key == 'test':
                     with cd(working_directory):
                         child = node[key]
-                        mytest = Test.parse_test(global_url, child)
+                        mytest = Test.parse_test(global_url, child, global_endpoint=global_endpoint)
+                        f_name = test_files.split('/')[-1]
+                        mytest.name = f_name
+                        test_config.filename = f_name
                         tests_out.append(mytest)
 
     testset = TestSet()
@@ -157,6 +166,8 @@ def parse_configuration(node, base_config=None):
     for key,value in node.items():
         if key == 'url':
             test_config.url = str(value)
+        elif key == 'endpoint':
+            test_config.endpoint = str(value)
         elif key == 'scope':
             test_config.scope = str(value)
         elif key == 'variable_binds':
@@ -183,6 +194,8 @@ def parse_configuration(node, base_config=None):
             except Exception as e:
                 print('\033[91m ERROR ON IMPORTING FLASK APPLICATION, ERROR MESSAGE : {}\033[0m'.format(str(e)))
                 print('\033[91m CHECK YOUR FLASK APP ON YOUR TEST CONFIGURATION \033[0m')
+        elif key == 'headers':
+            test_config.global_headers = value
     return test_config
 
 
@@ -481,6 +494,10 @@ def run_testsets(testsets):
             if test.group not in group_results:
                 group_results[test.group] = list()
                 group_failure_counts[test.group] = 0
+            
+            if not test.headers:
+                test.headers = myconfig.global_headers
+            
 
             result = run_test(test,test_config=myconfig,context=context,request_handler=requests_handler)
             result.body = None
@@ -515,7 +532,7 @@ def run_testsets(testsets):
         total_failures = total_failures - failures
 
         passfail = {True: u'SUCCEEDED', False: u'FAILED: '}
-        output_string = "Test Group {} {}: {}/{} Tests Passed!".format(group, passfail[failures == 0], str(test_count - failures), str(test_count))
+        output_string = "Test Group {}, on {}, {}: {}/{} Tests Passed!".format(group,myconfig.filename, passfail[failures == 0], str(test_count - failures), str(test_count))
 
         if myconfig.skip_term_colors:
             print(output_string)

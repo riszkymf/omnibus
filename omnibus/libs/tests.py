@@ -105,6 +105,7 @@ class Test(object):
     params = None
     endpoint = None
     json_body = False
+    _filename = None
 
     templates = None
 
@@ -374,12 +375,24 @@ class Test(object):
         with app.test_client() as client:
 
             endpoint = self.endpoint
-            if 'Content-Type' in self.headers:
-                content_type = self.headers['Content-Type']
-                if 'json' in self.headers['Content-Type']:
-                    self.json_body = True
-                    if self.body:
-                        body = self.body
+            if self.headers:
+                if 'Content-Type' in self.headers:
+                    content_type = self.headers['Content-Type']
+                    if 'json' in self.headers['Content-Type']:
+                        self.json_body = True
+                        if self.body:
+                            body = self.body
+                        else:
+                            body = None
+                else:
+                    body = self.body
+                    content_type = None
+            else:
+                content_type = None
+                if self.body:
+                    body = self.body
+                else: 
+                    body = None
             if self.method == 'GET':
                 result = client.get(
                     endpoint, content_type=content_type, headers=self.headers)
@@ -435,12 +448,10 @@ class Test(object):
         return request
 
     @classmethod
-    def parse_test(cls, base_url, node, input_test=None, test_path=None):
-
+    def parse_test(cls, base_url, node, input_test=None, test_path=None, global_endpoint=None):
         mytest = input_test
         if not mytest:
             mytest = Test()
-
         node = parsing.flatten_dictionaries(node)['data']
         node = parsing.lowercase_keys(node)
         node = node['data']
@@ -464,7 +475,6 @@ class Test(object):
                 setattr(configobject, configelement, converted)
                 return True
             return False
-
         for configelement, configvalue in node.items():
             if use_config_parser(mytest, configelement, configvalue):
                 continue
@@ -567,5 +577,14 @@ class Test(object):
 
         if 'expected_status' not in node.keys():
             mytest.expected_status = [200, 201, 204]
+
+        if 'endpoint' not in node.keys() and global_endpoint:
+            mytest.endpoint = global_endpoint
+            if mytest.local_url:
+                url_val = mytest.local_url
+            else:
+                url_val = base_url
+            mytest.url = urljoin(url_val,global_endpoint)
+
 
         return mytest
