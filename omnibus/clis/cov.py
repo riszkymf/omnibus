@@ -3,7 +3,7 @@ import os
 import sys
 from coverage import Coverage
 
-from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files
+from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files,check_exist
 from omnibus.libs.content_parser import parse_file,run_testsets
 from omnibus.libs import parsing
 
@@ -132,6 +132,14 @@ class Cov(Base):
         
         if self.args['--rcfile']:
             self.f_conf = get_path(cwd,self.args['--rcfile'])
+        else:
+            confname = ['.coveragec', 'setup.cfg', 'tox.ini']
+            for name in confname:
+                self.f_conf = get_path(cwd,name)
+                if check_exist(self.f_conf):
+                    break
+                else:
+                    self.f_conf = None
             
         if self.args['--source']:
             self.source_list = get_path_files(self.args['--source'])
