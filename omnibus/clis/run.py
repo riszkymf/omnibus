@@ -8,20 +8,18 @@ from .base import Base
 class Run(Base):
     """
     Usage:
-        run (FILE) [options]
+        run (FILE) [options] [-r|-c|-f]
 
     Options:
     -h --help                       Print Usage
     -r --requests                   Test REST Endpoint using Requests
     -c --curl                       Test REST Endpoint using curl(Not implemented)
     -f --flask                      Test RESTful Flask Endpoint
-    -u --url                        Global URL value
     FILE                            Test File or Folder
     -m --mock MOCK_FILE             Mock Data for test, must be yaml or json dictionary
-    -p --print                      Print respons' headers and bodies
-    --body                          Only print body
-    --head                          Only print head
-    -d --dump                       Dump Log
+    -p --print                      Print response's headers and bodies
+    --pb                            Only print body
+    --ph                            Only print headers
     -i --interactive                Interactive Mode
     --ignore                        Ignore test files or directories
     """
@@ -45,6 +43,7 @@ class Run(Base):
         paths = list() 
         cwd = os.getcwd()
 
+        print(self.args)
 
         if self.args['--ignore']:
             self.args['--ignore'] = get_path(cwd,self.args['--ignore'])
@@ -83,21 +82,19 @@ class Run(Base):
         elif self.args['--curl']:
             self.is_curl = True
 
-        if self.args['--url']:
-            self.url = self.args['URL']
 
         if self.args['--print']:
-            if self.args['--body']:
+            if self.args['--pb']:
                 self.print_bodies = True
-            if self.args['--head']:
+            if self.args['--ph']:
                 self.print_headers = True
             else:
                 self.print_headers = True
                 self.print_bodies = True
         else:
-            if self.args['--body']:
+            if self.args['--pb']:
                 self.print_bodies = True
-            if self.args['--head']:
+            if self.args['--ph']:
                 self.print_headers = True
         
         if self.args['--interactive']:
@@ -118,9 +115,6 @@ class Run(Base):
                     mock_vars = parsing.lowercase_keys(parsing.flatten_dictionaries(mock_vars)['data'])['data']
         else:
             mock_vars = None
-
-        if self.args['--dump']:
-            self.is_dumped = True
 
         for f in files:
             struct.append(load_yaml(f))

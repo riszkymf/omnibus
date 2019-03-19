@@ -13,12 +13,11 @@ from.base import Base
 class Cov(Base):
     """
     Usage:
-        cov (FILE) [options]
+        cov (FILE) (--source=SRC2,SRC2,...) [options]
 
     Options:
     -h --help                       Show this help message
     FILE                            Your test file(s)
-    -u, --url URL                   Global URL value
     -m, --mock MOCK_FILE            Mock Data for test, must be yaml or json dictionary
     -p, --print                     Print respons
     --pb                            Only print respons' body
@@ -47,7 +46,6 @@ class Cov(Base):
     f_mock = None
     f_tests = list()
     d_mock = None
-    url = None
     print_bodies = False
     print_headers = False
     interactive = False
@@ -55,12 +53,12 @@ class Cov(Base):
     savedat = None
     suffix = None
     source_list = None
+    url = None
 
     def execute(self):
 
         self.dir_out = self.args['--dir']
         self.err = self.args['--ignore-errors']
-        self.url = self.args['--url']
         self.interactive = self.args['--interactive']
         
         test_struct = list()
@@ -193,11 +191,20 @@ class Cov(Base):
         cov.stop()
         if self.args['--sv']:
             cov.save()
-        print("=============================================================")
-        print("                          REPORT                             ")
-        print("=============================================================")
+        if not (report_file):
+            print("=============================================================")
+            print("                          REPORT                             ")
+            print("=============================================================")
+            
+            cov.report(ignore_errors=self.err)
+        else:
+            if len(report_file.split('.')) > 1:
+                report_file = report_file.split('.')[0] + '.txt'
+            else:
+                report_file = report_file + '.txt'
 
-        cov.report(ignore_errors=self.err, file=report_file)
+            with open(report_file, 'w+') as f:
+                cov.report(ignore_errors=self.err, file=f)
 
         report = self.args['--report']
         if report:
