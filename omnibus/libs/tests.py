@@ -568,7 +568,7 @@ class Test(object):
                     parsing.flatten_dictionaries(configvalue))['data']
 
             elif configelement == 'generator_binds':
-                output = flatten_dictionaries(configvalue)
+                output = parsing.flatten_dictionaries(configvalue)
                 output = output['data']
                 output2 = dict()
                 for key, value in output.items():
