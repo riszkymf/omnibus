@@ -1,0 +1,21 @@
+- config:
+  - desc: configuration for test set
+  - testset: "Creating Zone"
+  - scope: configuration working scope
+  - url: "http://127.0.0.1:6968"
+  - flask : {path: app , name: create_app}
+  - variable_binds: {'mock_zone': 'test.com'}
+  - generator: 
+    - dnsname: {type: random_text, length: 5}
+- test: 
+  - generator_binds: {dns: dnsname}
+  - name: "TestInputZone"
+  - endpoint: "api/zone"
+  - method: "POST"
+  - group: "Generator Test"
+  - body: {template: '{"insert":{"fields":{"nm_zone": "$dns.com"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds: 
+      - 'id_zone' : {'jmespath' : 'message.id'}
+  - validators:
+      - assertTrue: {jmespath: 'message.id', test: exists }
