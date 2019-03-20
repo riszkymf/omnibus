@@ -5,17 +5,22 @@
   - url: "http://127.0.0.1:6968"
   - flask : {path: app , name: create_app}
   - variable_binds: {'mock_zone': 'test.com'}
-  - generator: 
-    - dnsname: {type: random_text, length: 5}
 - test: 
-  - generator_binds: {dns: dnsname}
   - name: "TestInputZone"
   - endpoint: "api/zone"
   - method: "POST"
   - group: "Generator Test"
-  - body: {template: '{"insert":{"fields":{"nm_zone": "$dns.com"}}}'}
+  - body: {template: '{"insert":{"fields":{"nm_zone": "$mock_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
   - extract_binds: 
       - 'id_zone' : {'jmespath' : 'message.id'}
   - validators:
       - assertTrue: {jmespath: 'message.id', test: exists }
+- test:
+  - name: "TestGetZone"
+  - endpoint: "api/zone"
+  - method: "GET"
+  - group: "Generator Test"
+  - headers: {'Content-Type': 'application/json'}
+  - validators:
+    - compare: {jmespath: 'data[*].nm_zone' , comparator: 'contains' , expected: {template: $mock_zone }}
