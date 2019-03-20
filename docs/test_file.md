@@ -18,6 +18,7 @@ There can only be one configuration per test file. Test configuration will set y
     - id: { type: generator_type, start: starting value}
   - flask: { path: app.module , name: create_app}
   - variable_binds: {'variable': 'value.com'}
+  - expected_status: [200,205]
 ```
 Notes:
 - Variables that is written in configuration will be overridden if you write it in test section. For example if you write endpoint twice,  '/login' and '/logout' in configuration and test section  respectively, your test will use '/logout' as endpoint.
@@ -53,6 +54,7 @@ Test structure is where you write your test data that will be executed. There ar
   - validators:
       - # your assertion
       - # your assertion
+  - expected_status: [200] # A list of your expected result's status code. If not written, default is 200
 ```
 
 - Test group is used during report (test report, not coverage). FOr example, a test file with two different test groups will generate a report like this
