@@ -429,10 +429,11 @@ class Test(object):
             if self.auth_username and self.auth_password:
                 auth = HTTPBasicAuth(self.auth_username, self.auth_password)
                 request.auth = auth
-            if 'Content-Type' in self.headers and 'json' in self.headers['Content-Type']:
-                request.json = json.loads(d_body)
-            else:
-                request.body = d_body
+            if self.headers:
+                if 'Content-Type' in self.headers and 'json' in self.headers['Content-Type']:
+                    request.json = json.loads(d_body)
+                else:
+                    request.body = d_body
 
         # Params
         if self.params:

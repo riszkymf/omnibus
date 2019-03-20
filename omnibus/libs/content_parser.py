@@ -290,6 +290,7 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
                 result.passed = False
             ## Retrieve Values
             result.body = util.convert(respons.content)
+            respons.headers = respons.headers.items()
             result.response_headers = respons.headers
             result.response_code = respons.status_code
             response_code = respons.status_code
@@ -403,7 +404,7 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
         result.test = templated_test
         for key,val in list(respons.headers):
             headers[key] = val
-        result.response_headers = headers
+        result.response_headers = headers.items()
         result.response_code = respons.status_code
         response_code = respons.status_code
         ##convert body

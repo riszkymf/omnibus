@@ -286,7 +286,6 @@ class HeaderExtractor(AbstractExtractor):
         # Value for all matching key names
         # extracted = [y[1] for y in filter(lambda x: x[0] == low, headers)]
         extracted = list(y[1] for y in filter(lambda x: x[0].lower() == low, headers))
-        print(extracted)
 
         if len(extracted) == 0:
             raise ValueError("Invalid header name {}".format(query))
@@ -309,6 +308,7 @@ class RawBodyExtractor(AbstractExtractor):
     is_body_extractor = True
 
     def extract_internal(self, query=None, args=None, body=None, headers=None):
+        print(body)
         return body
 
     @classmethod
