@@ -21,7 +21,7 @@ class Run(Base):
     --pb                            Only print body
     --ph                            Only print headers
     -i --interactive                Interactive Mode
-    --ignore                        Ignore test files or directories
+    --ignore FILE                   Ignore test files or directories
     """
 
     is_flask = True         #Default flask app
