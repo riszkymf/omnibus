@@ -308,7 +308,6 @@ class RawBodyExtractor(AbstractExtractor):
     is_body_extractor = True
 
     def extract_internal(self, query=None, args=None, body=None, headers=None):
-        print(body)
         return body
 
     @classmethod
