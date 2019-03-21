@@ -140,6 +140,179 @@ The validator above will check if the extracted data doesn't exist. If it does, 
 | 'type'                        	| Type of variable                          	| A is instance of (at least on of) B          	|
 | 'regex'                       	| Regex Equals                              	| A matches regex B                            	|
 
-### 4. Extractor
 
-Extractor is a tool to extract certain data from result's body. 
+
+**********************
+##  Extractor
+
+Extractor is a tool to extract certain data from result's body. Omnibus has several extractor, namely:
+
+### 1. Header extractor:
+- Name : "header"
+- Description: Extract headers' element from response
+
+Example:
+```yaml
+- variable_binds:
+    - p: { header: 'Content-Type'}
+```
+From the example above, extractor will extract content type from headers and bind it to 'p'.
+
+### 2. Body Extractor
+- Name: "raw_body"
+- Description: Extracts raw body from response
+
+Example:
+```yaml
+- variable_binds:
+  - b: { raw_body }
+```
+Note that body extractor don't need any configuration to point which part of response's body that it will extract as it will bind the whole body to 'b'.
+
+### 3. JSONpath_mini:
+
+The basic 'jsonpath_mini' extractor provides a very limited JsonPath-like implementation to grab data from JSON, with no external library dependencies.
+
+The elements of this syntax are a list of keys or indexes, descending down a tree, seperated by periods. Numbers are assumed to be array indices.
+
+If you wish to return the whole object, you may use an empty "" query or "." -- this can be helpful for APIs returning an array of objects, where you want to count the number of objects returned (using countEq operator).
+
+
+- Name: jsonpath_miini:
+- Description: Extracts elements from json body
+
+Example:
+
+Given this json as response :
+```json
+{
+    "count": 3,
+    "data": [
+        {
+            "id_zone": "426187006277550081",
+            "nm_zone": "harlem2.com",
+            "state": 1
+        },
+        {
+            "id_zone": "426187074628517889",
+            "nm_zone": "harlem.com",
+            "state": 1
+        },
+        {
+            "id_zone": "428136215926702081",
+            "nm_zone": "burungbetina.com",
+            "state": 1
+        }
+    ],
+    "code": 200,
+    "status": "success",
+    "message": "Operation succeeded"
+}
+```
+```yaml
+- variable_binds: 
+    - data: { jsonpath_mini: 'jsonpath_mini syntax' }
+```
+
+JSONPATH syntax will extract data as shown below.
+
+| JSONPATH_MINI SYNTAX     	| RESULT                                                                                                                                        	|
+|--------------------------	|-----------------------------------------------------------------------------------------------------------------------------------------------	|
+| data.1                   	| [{"id_zone":"426187074628517889","nm_zone":"harlem.com","state":1}]                                                                           	|
+| data.1.nm_zone           	| "harlem.com"                                                                                                                                  	|
+| code                     	| 200                                                                                                                                           	|
+| data.0,2                 	| [{"id_zone":"426187006277550081","nm_zone":"harlem2.com","state":1}, {"id_zone":"428136215926702081","nm_zone":"burungbetina.com","state":1}] 	|
+| data.0,2.nm_zone         	| ["harlem2.com","burungbetina.com"]                                                                                                            	|
+| data.0,2.nm_zone,id_zone 	| ["harlem2.com","426187006277550081","burungbetina.com","428136215926702081"]                                                                  	|
+| data.*.id_zone           	| ["426187006277550081","426187074628517889","428136215926702081"]                                                                              	|
+
+Jsonpath extractor also supports templating, for example if you call:
+```yaml
+jsonpath_mini: { template: $call.0.nm_zone}
+```
+if variable call is set to 'data' , then it will extract 'harlem2.com'
+
+For further information on jsonpath, see [documentation](https://github.com/kennknowles/python-jsonpath-rw)
+
+### 4. JMESPATH Extractor
+
+- Name : jmespath
+- Description: The 'jmespath' extractor provides fulll                     JMESPath implementation to grab data from JSON and requires jmespath library to be available for import. Full range of JMESPath expressions is supported.
+
+Given this JSON data:
+```json
+{
+   "test1" : {"a": "foo", "b": "bar", "c": "baz"},
+   "test2" : {"a": {"b": {"c": {"d": "value"}}}},
+   "test3" : ["a", "b", "c", "d", "e", "f"],
+   "test4" : {
+      "a": {
+        "b": {
+          "c": [
+            {"d": [0, [1, 2]]},
+            {"d": [3, 4]}
+          ]
+        }
+      } },
+   "test5" : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+   "test6" : {
+      "people": [
+         {"first": "James", "last": "d"},
+         {"first": "Jacob", "last": "e"},
+         {"first": "Jayden", "last": "f"},
+         {"missing": "different"}
+      ],
+      "foo": {"bar": "baz"}
+   },
+   "test7" : {
+      "ops": {
+         "functionA": {"numArgs": 2},
+         "functionB": {"numArgs": 3},
+         "functionC": {"variadic": 4}
+      }
+   },
+   "test8" : {
+      "reservations": [
+         { "instances": [ {"state": "running"}, {"state": "stopped"} ] },
+         { "instances": [ {"state": "terminated"}, {"state": "runnning"} ] }
+      ]
+   },
+   "test9" : [ [0, 1], 2, [3], 4, [5, [6, 7]] ],
+   "test10" : { "machines": [ {"name": "a", "state": "running"}, {"name": "b", "state": "stopped"}, {"name": "c", "state": "running"} ] },
+   "test11" : {
+      "people": [
+         { "name": "b", "age": 30, "state": {"hired": "ooo"} },
+         { "name": "a", "age": 50, "state": {"fired": "ooo"} },
+         { "name": "c", "age": 40, "state": {"hired": "atwork"} } ]
+   } ,
+   "test12" : { "myarray": [ "foo", "foobar", "barfoo", "bar", "baz", "barbaz", "barfoobaz" ] }
+}
+```
+Query results is shown on table below.
+
+| Query                           | Output                        |
+|---------------------------------|-------------------------------|
+| ```'test1.a'```                 | ```"foo"```                   |
+| ```'test1.b'```                 | ```"bar"```                   |
+| ```'test1.c'```                 | ```"baz"```                   |
+| ```'test2.a.b.c.d'```           | ```"value"```                 |
+| ```'test3[1]'```                | ```"b"``` |
+|```'test4.a.b.c[0].d[1][0]'``` | ```1``` |
+|```'length(test5[0:5])'``` | ```5``` |
+|```'test5[1:3]'``` | ```'[1, 2]'``` |
+|```'test5[::2]'``` | ```'[0, 2, 4, 6, 8]'``` |
+|```'test5[5:0:-1]'``` | ```'[5, 4, 3, 2, 1]'``` |
+|```'test6.people[*].first'``` | ```"['James', 'Jacob', 'Jayden']"``` |
+|```'test6.people[:2].first'``` | ```"['James', 'Jacob']"``` |
+|```'test6.people[*].first | [0]'``` | ```'James'``` |
+|```'test7.ops.*.numArgs'``` | ```'[2, 3]'``` |
+|```'test8.reservations[*].instances[*].state'``` | ```"[['running', 'stopped'], ['terminated', 'runnning']]"``` |
+|```'test9[]'``` | ```'[0, 1, 2, 3, 4, 5, [6, 7]]'``` |
+|```"test10.machines[?state=='running'].name"``` | ```"['a', 'c']"``` |
+|```"test10.machines[?state!='running'][name, state] | [0]"``` | ```"['b', 'stopped']"``` |
+|```'length(test11.people)'``` | ```3``` |
+|```'max_by(test11.people, &age).name'``` | ```'a'``` |
+|```"test12.myarray[?contains(@, 'foo') == `true`]"``` | ```"['foo', 'foobar', 'barfoo', 'barfoobaz']"``` |
+
+
+
