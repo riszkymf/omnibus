@@ -10,9 +10,14 @@ from os.path import isfile,isdir, join, abspath
 def generate_file(filename, data):
 
     generate_dir()
-    filename = open("{}.txt".format(filename), "w+")
 
-   
+    try:
+        with open("{}.txt".format(filename), "w+") as f:
+            f.write(data)
+            f.close()
+            return True
+    except:
+        return False
 
 def load_yaml(filename):
     with open(filename, "r") as f:

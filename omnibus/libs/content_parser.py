@@ -6,7 +6,10 @@ import requests
 import logging
 import pycurl
 import traceback
+import os
+import copy
 
+from . import reports as rep
 from . import generator
 from . import parsing
 from . import util
@@ -73,6 +76,8 @@ class TestConfig:
     endpoint = None
     global_headers = None
     filename = None
+    is_reported = True
+    report = ["html","xml"]
 
 
     def __str__(self):
@@ -82,6 +87,7 @@ class TestSet:
     """ Container for test sets """
     tests = list()
     config = TestConfig()
+    report = list()
 
     def __init__(self):
         self.config = TestConfig()
@@ -126,7 +132,6 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
                         child = node[key]
                         mytest = Test.parse_test(global_url, child, global_endpoint=global_endpoint)
                         f_name = test_files.split('/')[-1]
-                        mytest.name = f_name
                         test_config.filename = f_name
                         tests_out.append(mytest)
 
@@ -147,6 +152,8 @@ class TestResponse:
     passed = False
     response_headers = None
     failures = None
+
+    report = list()
 
     def __init__(self):
         self.failures = list()
@@ -248,15 +255,32 @@ def session_handle(request,test_config=TestConfig(),session_handle=None, *args, 
     response = session_handle.send(prepped)
     return response
 
-def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None, *args, **kwargs):
+def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None, testreports=list(), *args, **kwargs):
   
+    if not testreports:
+        testreports = rep.Report()
+
     my_context = context
     if my_context is None:
         my_context = Context()
+    
 
     mytest.update_context_before(my_context)
     templated_test = mytest.realize(my_context)
-  
+    
+    if test_config.is_reported:
+        testreports.reports.append(("test_name",templated_test.name))
+        testreports.reports.append(("method",templated_test.method))
+        testreports.reports.append(("headers",list(templated_test.headers.items())))
+        if isinstance(templated_test.body,dict):
+            testreports.reports.append(('body',list(templated_test.body.items())))
+        elif isinstance(templated_test.body,str):
+            try:
+                tmp_bod = json.loads(templated_test.body)
+                testreports.reports.append(('body',[tmp_bod]))
+            except:
+                testreports.reports.append(('body',[templated_test.body]))
+
     if test_config.interactive or (test_config.print_bodies or test_config.print_headers):
         print("--------------------------------------------")
         print("Test Name\t:\t{}\n".format(mytest.name))
@@ -290,10 +314,19 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
                 result.passed = False
             ## Retrieve Values
             result.body = util.convert(respons.content)
-            respons.headers = respons.headers.items()
+            respons.headers = list(respons.headers.items())
             result.response_headers = respons.headers
             result.response_code = respons.status_code
             response_code = respons.status_code
+
+            if test_config.is_reported:
+                testreports.results.append(("response_headers",respons.headers))
+                testreports.results.append(("respone_code",result.response_code))
+                testreports.passed = result.passed
+                if result.body:
+                    testreports.results.append(("body",result.body))
+                result.report.append(testreports)
+
     elif test_config.is_curl:
         curl_handle = pycurl.Curl()
         curl = templated_test.configure_curl(
@@ -345,8 +378,19 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             result.passed = False
             failure_message = "Invalid HTTP Response Code: Code {} is not expected".format(response_code)
             result.failures.append(Failure  (message=failure_message,details=None,failure_type=validators.FAILURE_INVALID_RESPONSE))
+
+        if test_config.is_reported:
+            testreports.results.append(("response_code",result.response_code))
+            testreports.passed = result.passed
+            if result.body:
+                testreports.results.append(("body",result.body))
+            result.report.append(testreports)
+
         try:
             result.response_headers = parse_headers(result.response_headers)
+            if test_config.is_reported:
+                testreports.results.append(("response_headers",result.response_headers))
+        
         except Exception as e:
             trace = traceback.format_exc()
             result.failures.append(Failure(message="Header parsing exception: {0}".format(
@@ -355,10 +399,10 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             curl.close()
             return result
 
-        # print str(test_config.print_bodies) + ',' + str(not result.passed) + ' ,
-        # ' + str(test_config.print_bodies or not result.passed)
 
         head = result.response_headers
+        
+        
 
         # execute validator on body
         if result.passed is True:
@@ -447,7 +491,7 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
         print(result.response_headers)
   
     logger.debug(result)
-  
+
     return result
 
 
@@ -478,7 +522,6 @@ def run_testsets(testsets):
         mytest = testset.tests
         myconfig = testset.config
         context = Context()
-
         if myconfig.variable_binds:
             context.bind_variables(myconfig.variable_binds)
         if myconfig.generators:
@@ -498,9 +541,13 @@ def run_testsets(testsets):
             
             if not test.headers:
                 test.headers = myconfig.global_headers
-            
 
-            result = run_test(test,test_config=myconfig,context=context,request_handler=requests_handler)
+            if myconfig.is_reported:
+                myreport = rep.Report()
+            else:
+                myreport = list()
+
+            result = run_test(test,test_config=myconfig,context=context,request_handler=requests_handler,reports=myreport)
             result.body = None
             if not result.passed:
                 logger.error('Test Failed: ' + test.name + " URL=" + result.test.url +
@@ -523,6 +570,10 @@ def run_testsets(testsets):
                 print(
                 "STOP ON FAILURE! Stopping test set execution, continuing with other test sets")
                 break
+    if myconfig.is_reported:
+        reportfile = util.get_path(os.getcwd(),'reptest')
+        report_blackbox(result.report,reportfile)
+        
 
     if myinteractive :
         print("===========================")
@@ -544,3 +595,17 @@ def run_testsets(testsets):
                 print('\033[92m' + output_string + '\033[0m')
   
     return total_failures
+
+
+def report_blackbox(myreport,filename):
+    out = ''
+    for report in myreport:
+        text = ""
+        print("REQUEST : ")
+        print(report.reports)
+        print("RESULT : ")
+        print(report.results)
+        for key,val in report.reports:
+            text += "\n{}\t:\t{}\n\n".format(str(key),str(val))
+        out = out + text
+    util.generate_file(filename,out)
