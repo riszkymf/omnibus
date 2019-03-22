@@ -24,7 +24,7 @@
   - method: "POST"
   - body: {template: '{"where":{"tags":{"nm_type": "$type1"}}}'}
   - extract_binds:
-      - 'id_type1': {jmespath: 'data[0].id'}
+      - 'id_type1': {jmespath: 'data[0].id_type'}
 - test:
   - name: "GetTypeNameMX"
   - group: "Setup Variables"
@@ -32,7 +32,7 @@
   - method: "POST"
   - body: {template: '{"where":{"tags":{"nm_type": "$type2"}}}'}
   - extract_binds:
-      - 'id_type2': {jmespath: 'data[0].id'}
+      - 'id_type2': {jmespath: 'data[0].id_type'}
 - test:
   - name: "GetTTLID"
   - group: "Setup Variables"
@@ -40,7 +40,7 @@
   - method: "POST"
   - body: {template: '{"where":{"tags":{"nm_ttl": "$ttlval"}}}'}
   - extract_binds:
-      - 'id_ttl' : {jmespath: 'data[0].id'}
+      - 'id_ttl' : {jmespath: 'data[0].id_ttl'}
 - test:
   - name: "TESTRecordInsert"
   - group: "Record Endpoint"
@@ -48,7 +48,7 @@
   - endpoint: 'api/record'
   - body: {template: '{"insert":{"fields":{"nm_record":"test1","date_record":"2018070410","id_zone":"$id_zone","id_type":"$id_type1"}}}'}
   - extract_binds:
-      - 'id_record1' : {jmespath: 'data[0].id'}
+      - 'id_record1' : {jmespath: 'message.id'}
 
 - test: 
   - name: "TestRemoveZone"

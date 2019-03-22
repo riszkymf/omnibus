@@ -14,4 +14,3 @@
   - body: '{ "username" : "test@biznetgio.com" , "password": "BiznetGio2017"}'
   - extract_binds:
       - token: {jmespath: 'data.token'}
-      - t : {raw_body: 'data'}
