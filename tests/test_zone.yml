@@ -9,6 +9,7 @@
 - test: 
   - name: "TestInputZone"
   - endpoint: "api/zone"
+  - group: CRUD
   - method: "POST"
   - body: {template: '{"insert":{"fields":{"nm_zone": "$mock_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
@@ -20,6 +21,7 @@
   - name: "TestSearchZone"
   - endpoint: "api/zone"
   - method: "POST"
+  - group : CRUD
   - body: {template: '{"where":{"tags":{"id_zone": "$id_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
   - validators:
@@ -27,6 +29,7 @@
 - test: 
   - name: "TestSynchronizeZone"
   - endpoint: "api/sendcommand"
+  - group: Synchronize
   - method: "POST"
   - body: {template: '{"conf-insert":{"tags":{"id_zone":"$id_zone"}}}'}
   - headers: {'Content-Type' : 'application/json'}
@@ -36,6 +39,7 @@
   - name: "TestGetTTL"
   - endpoint: "api/ttl"
   - method: "POST"
+  - group : "Get Data"
   - body: '{"where":{"tags":{"nm_ttl": "1800"}}}'
   - headers: {'Content-Type' : 'application/json'}
   - extract_binds:
@@ -46,6 +50,7 @@
   - name: "TestGetRecordId"
   - endpoint: "api/type"
   - method: "POST"
+  - group : "Get Data"
   - body: '{"where":{"tags":{"nm_type": "CNAME"}}}'
   - headers: {'Content-Type' : 'application/json'}
   - extract_binds:
