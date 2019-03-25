@@ -1,9 +1,6 @@
 import json
 
-from xml.etree import ElementTree as ET
-from xml.dom import minidom
-from xml.etree.ElementTree import Element, SubElement, Comment, tostring
-
+from lxml import etree
 
 
 
@@ -14,31 +11,38 @@ class Report(object):
         self.reports = list()
         self.passed = False
 
+def get_xml(item):
+    
+    if isinstance(item,tuple):
+        result = etree.Element(item[0])
+        if item[1]:
+            if len(item[1]) > 1 and (isinstance(item[1][0],str) or isinstance(item[1][0],int)):
+                txt = ""
+                for i in item[1]:
+                    txt += str(i) + ", "
+                txt = txt.rstrip(', ')
+            else:
+                txt = ""
+                if isinstance(item[1][0],str):
+                    txt  = item[1][0]
+                elif isinstance(item[1][0],int):
+                    txt = str(item[1][0])
+                elif isinstance(item[1][0],dict):
+                    txt = str(item[1][0])
+                elif isinstance(item[1][0],tuple):
+                    for key,val in item[1]:
+                        # tmp_el = etree.Element(key)
+                        # tmp_el.text = str(val)
+                        # result.append(tmp_el)
+                        result.attrib[key] = val
+            result.text = txt
+            result = [result]
+        elif isinstance(item,dict) :
+            result = list()
+            for key,val in item.items():
+                el = etree.Element(key)
+                el.text = str(val)
+                result.append(el)
+        return result
 
-def generate_xml_element(element):
-    """ Processing Request and Response report """
-    element_key = dict()
-    for key,value in element:
-        element_key[key] = ET.Element(key)
-        if isinstance(value[0],tuple):
-            for i,j in value:
-                element_key[i] = ET.SubElement(key,i)
-                element_key[i].text = j
-        elif isinstance(value[0],dict):
-            for i,j in value.items():
-                element[i] = ET.SubElement(key,i)
-                element_key[i].text = j
-        elif isinstance(value[0],str):
-            element_key[key].text = value          
 
-    return element_key
-
-
-def change_tuples_valtype(data):
-    " Tuple must be in format (key,value) "
-    new = list()
-    for key,value in data:
-        if not isinstance(value,list):
-            value = [value]
-        new.append((key,value))
-    return new

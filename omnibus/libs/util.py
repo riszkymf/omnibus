@@ -6,13 +6,13 @@ import json
 from os import listdir
 from os.path import isfile,isdir, join, abspath
 
+GLOBAL_HOME = os.path.expanduser("~")
+
 
 def generate_file(filename, data):
-
-    generate_dir()
-
+    print(filename)
     try:
-        with open("{}.txt".format(filename), "w+") as f:
+        with open("{}".format(filename), "w+") as f:
             f.write(data)
             f.close()
             return True
@@ -47,9 +47,12 @@ def check_yaml(filename):
     return os.path.isfile(filename)
 
 
-def generate_dir():
-    if not os.path.isdir("tests"):
-        os.mkdir("tests")
+def generate_dir(dirname):
+    path = get_path(os.getcwd(),dirname)
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    else :
+        return
 
 
 def generate_respons(status, data=None, message=None):

@@ -9,6 +9,7 @@ import traceback
 import os
 import copy
 
+
 from . import reports as rep
 from . import generator
 from . import parsing
@@ -20,7 +21,7 @@ from .tests import Test, DEFAULT_TIMEOUT
 from .binding import Context
 from .validators import Failure
 from email import message_from_string
-
+from lxml import etree as ET
 from io import BytesIO as MyIO
 
 DIR_LOCK = threading.RLock()
@@ -267,11 +268,20 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
 
     mytest.update_context_before(my_context)
     templated_test = mytest.realize(my_context)
-    
     if test_config.is_reported:
-        testreports.reports.append(("test_name",templated_test.name))
-        testreports.reports.append(("method",templated_test.method))
+        testreports.reports.append(("test_name",[templated_test.name]))
+        testreports.reports.append(("method",[templated_test.method]))
         testreports.reports.append(("headers",list(templated_test.headers.items())))
+        testreports.reports.append(("url",[templated_test.url]))
+        testreports.reports.append(("group",[templated_test.group]))
+        testreports.reports.append(("expected_status",templated_test.expected_status))
+        if templated_test.validators:
+            validator_report = list()
+            for i in templated_test.validators:
+                validator_report.append(i.config)
+            testreports.reports.append(("validators",validator_report))
+        else:
+            testreports.reports.append(("validators",None))                
         if isinstance(templated_test.body,dict):
             testreports.reports.append(('body',list(templated_test.body.items())))
         elif isinstance(templated_test.body,str):
@@ -321,10 +331,10 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
 
             if test_config.is_reported:
                 testreports.results.append(("response_headers",respons.headers))
-                testreports.results.append(("respone_code",result.response_code))
-                testreports.passed = result.passed
+                testreports.results.append(("response_code",[result.response_code]))
+                testreports.passed = [result.passed]
                 if result.body:
-                    testreports.results.append(("body",result.body))
+                    testreports.results.append(("body",[result.body]))
                 result.report.append(testreports)
 
     elif test_config.is_curl:
@@ -380,10 +390,10 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
             result.failures.append(Failure  (message=failure_message,details=None,failure_type=validators.FAILURE_INVALID_RESPONSE))
 
         if test_config.is_reported:
-            testreports.results.append(("response_code",result.response_code))
+            testreports.results.append(("response_code",[result.response_code]))
             testreports.passed = result.passed
             if result.body:
-                testreports.results.append(("body",result.body))
+                testreports.results.append(("body",[result.body]))
             result.report.append(testreports)
 
         try:
@@ -571,8 +581,9 @@ def run_testsets(testsets):
                 "STOP ON FAILURE! Stopping test set execution, continuing with other test sets")
                 break
     if myconfig.is_reported:
-        reportfile = util.get_path(os.getcwd(),'reptest')
-        report_blackbox(result.report,reportfile)
+        util.generate_dir('runcov')
+        report_file = 'runcov/'+myconfig.filename
+        report_blackbox(result.report,report_file)
         
 
     if myinteractive :
@@ -598,14 +609,56 @@ def run_testsets(testsets):
 
 
 def report_blackbox(myreport,filename):
-    out = ''
+    f_name = filename.split('/')[-1]
+    f_name = filename.split('.')
+    filename = f_name[0]+'.xml'
+    print(filename)
+    xml_testsets = ET.Element("root")
+    group = dict()
+    
     for report in myreport:
-        text = ""
-        print("REQUEST : ")
-        print(report.reports)
-        print("RESULT : ")
-        print(report.results)
         for key,val in report.reports:
-            text += "\n{}\t:\t{}\n\n".format(str(key),str(val))
-        out = out + text
+            if key.lower() == 'group':
+                if val[0] not in group:
+                    group[val[0]] = [report]
+                else:
+                    group[val[0]].append(report)
+
+    
+
+
+    out = ''
+    for key,val in group.items():
+        xml_group = ET.Element("Group")
+        xml_group.text = str(key)
+        
+        for report in val:
+            xml_request = ET.Element("Request")
+            for i in report.reports:
+                if i[0].lower() == 'test_name':
+                    xml_test = rep.get_xml(i)[0]
+                temp=rep.get_xml(i)
+                for i in temp:
+                    xml_request.append(i)
+            xml_response = ET.Element("Response")
+            for i in report.results:
+                temp = rep.get_xml(i)
+                for i in temp:
+                    xml_response.append(i)
+            xml_test.append(xml_request)
+            xml_test.append(xml_response)
+            xml_group.append(xml_test)
+        xml_testsets.append(xml_group)
+        # for report in val:
+        #     text = ""
+        #     text += "\n\nREQUEST : \n"
+        #     for i in report.reports:
+        #         text += str(i) +"\n"
+        #     text+= "\n\nRESULT : \n"
+        #     for i in report.results:
+        #         text += str(i)+"\n"
+        #     txt += text
+        # out += txt
+    out = ET.tostring(xml_testsets,encoding="unicode",pretty_print=True)
+    filename = os.path.join(os.getcwd(),filename)
     util.generate_file(filename,out)

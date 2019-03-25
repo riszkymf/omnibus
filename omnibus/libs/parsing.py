@@ -1,6 +1,7 @@
 import os
 import sys
 import string
+import json
 from .util import generate_respons, convert
 
 
@@ -63,4 +64,25 @@ def encode_unicode_bytes(my_string):
     if isinstance(my_string, str):
         return my_string.encode('utf8')
 
+
+def convert_to_dict(data):
+    """Conver data to dictionary, if json not valid throw error . Tuple must be in (key,value) format"""
+    if isinstance(data,dict):
+        return data
+    elif isinstance(data,str):
+        try:
+            return json.loads(data)
+        except:
+            raise ValueError("String is not a valid JSON")
+    elif isinstance(data,tuple):
+        retdat = dict()
+        retdat[data[0]] = data[1]
+        return retdat
+    elif isinstance(data,list):
+        retdat = dict()
+        for key,value in data:
+            retdat[key] = value
+        return retdat
+    else:
+        raise ValueError("{} must be in JSON, tuples or list of tuples".format(data))
 
