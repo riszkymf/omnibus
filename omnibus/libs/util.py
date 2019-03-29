@@ -10,7 +10,6 @@ GLOBAL_HOME = os.path.expanduser("~")
 
 
 def generate_file(filename, data):
-    print(filename)
     try:
         with open("{}".format(filename), "w+") as f:
             f.write(data)
@@ -146,3 +145,24 @@ def get_path_files(filelist):
         return out_list
     else:
         raise ValueError("Files format must be a list or str")
+
+
+def case_conversion(text):
+    text = text.replace("_"," ")
+    text = text.split(" ")
+    result = ''
+    for txt in text:
+        x = list(txt)
+        x[0] = x[0].upper()
+        tmp = ''
+        for i in x:
+            tmp += i
+        result += tmp + ' '
+    return result.rstrip(" ")
+
+def convert_new_line_to_br(text):
+    try:
+        return "</br>".join(text.split("\n"))
+    except:
+        return "</br>".join(convert(text).split("\n"))
+

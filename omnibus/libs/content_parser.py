@@ -78,7 +78,8 @@ class TestConfig:
     global_headers = None
     filename = None
     is_reported = True
-    report = ["html","xml"]
+    report_type = ""
+    reportdest = 'runcov'
 
 
     def __str__(self):
@@ -153,6 +154,7 @@ class TestResponse:
     passed = False
     response_headers = None
     failures = None
+    failure_report = list()
 
     report = list()
 
@@ -269,9 +271,14 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
     mytest.update_context_before(my_context)
     templated_test = mytest.realize(my_context)
     if test_config.is_reported:
+        testreports.reports.append(("testsets",[test_config.filename]))
         testreports.reports.append(("test_name",[templated_test.name]))
         testreports.reports.append(("method",[templated_test.method]))
-        testreports.reports.append(("headers",list(templated_test.headers.items())))
+        if templated_test.headers:
+            testreports.reports.append(("headers",list(templated_test.headers.items())))
+        else:
+            testreports.reports.append(("headers",[None]))
+        
         testreports.reports.append(("url",[templated_test.url]))
         testreports.reports.append(("group",[templated_test.group]))
         testreports.reports.append(("expected_status",templated_test.expected_status))
@@ -321,18 +328,25 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
                 trace = traceback.format_exc()
                 result.failures.append(Failure(message="Exception Happens: {}".format(str(e)),
                 details=trace, failure_type=validators.FAILURE_REQUESTS_EXCEPTION))
-                result.passed = False
             ## Retrieve Values
+
             result.body = util.convert(respons.content)
             respons.headers = list(respons.headers.items())
             result.response_headers = respons.headers
             result.response_code = respons.status_code
             response_code = respons.status_code
 
+            if response_code in mytest.expected_status:
+                result.passed = True
+            else:
+                result.passed = False
+
             if test_config.is_reported:
                 testreports.results.append(("response_headers",respons.headers))
                 testreports.results.append(("response_code",[result.response_code]))
                 testreports.passed = [result.passed]
+                if not result.passed:
+                    testreports.results.append(("Failure message: ",[result.failures]))
                 if result.body:
                     testreports.results.append(("body",[result.body]))
                 result.report.append(testreports)
@@ -391,7 +405,6 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
 
         if test_config.is_reported:
             testreports.results.append(("response_code",[result.response_code]))
-            testreports.passed = result.passed
             if result.body:
                 testreports.results.append(("body",[result.body]))
             result.report.append(testreports)
@@ -501,7 +514,10 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
         print(result.response_headers)
   
     logger.debug(result)
-
+    if test_config.is_reported:
+        testreports.passed = [result.passed]
+        if result.failures:
+            testreports.results.append(("failures",result.failures))
     return result
 
 
@@ -563,6 +579,10 @@ def run_testsets(testsets):
                 logger.error('Test Failed: ' + test.name + " URL=" + result.test.url +
                 " Group=" + test.group + " HTTP Status Code: " + str(result.response_code))
 
+                for i in result.report:
+                    if not i.passed[0]:
+                        result.failure_report.append(i)
+
                 if result.failures:
                     for failure in result.failures:
                         log_failure(failure, context=context, test_config=myconfig)
@@ -581,11 +601,13 @@ def run_testsets(testsets):
                 "STOP ON FAILURE! Stopping test set execution, continuing with other test sets")
                 break
     if myconfig.is_reported:
-        util.generate_dir('runcov')
-        report_file = 'runcov/'+myconfig.filename
-        report_blackbox(result.report,report_file)
+        util.generate_dir(myconfig.reportdest)
+        report_file = myconfig.reportdest+'/'+myconfig.filename
+        if myconfig.report_type.lower() == 'xml':
+            report_blackbox_xml(result.report,report_file)
+        else:
+            report_blackbox_html(result.report,report_file,result.failure_report)
         
-
     if myinteractive :
         print("===========================")
 
@@ -608,14 +630,12 @@ def run_testsets(testsets):
     return total_failures
 
 
-def report_blackbox(myreport,filename):
+def report_blackbox_xml(myreport,filename):
     f_name = filename.split('/')[-1]
     f_name = filename.split('.')
     filename = f_name[0]+'.xml'
-    print(filename)
     xml_testsets = ET.Element("root")
     group = dict()
-    
     for report in myreport:
         for key,val in report.reports:
             if key.lower() == 'group':
@@ -662,3 +682,12 @@ def report_blackbox(myreport,filename):
     out = ET.tostring(xml_testsets,encoding="unicode",pretty_print=True)
     filename = os.path.join(os.getcwd(),filename)
     util.generate_file(filename,out)
+
+def report_blackbox_html(myreports,f_name,failure=None):
+    dest = os.path.dirname(f_name)
+    dest = os.path.join(os.getcwd(),dest)
+    rep.collect_source(dest)
+    f_temp = f_name.split('.')
+    f_name = f_temp[0]+'.html'
+    
+    rep.generate_html_test(myreports,f_name,failure)

@@ -1,0 +1,29 @@
+pre {
+    border: 1px,black,solid;
+    padding: 15px;
+    background-color: #2F3431;
+    color: white;   
+};
+tr.clickable-row{
+    cursor: pointer;
+}
+tr.clickable-row:hover{
+    cursor: pointer;
+}
+select.hidden{
+    visibility: hidden;
+}
+div#sumTable_length{
+    visibility: hidden;
+}
+
+div#sumTable_info{
+    visibility: hidden;
+}
+ul.pagination{
+    visibility: hidden;
+}
+
+.hidden{
+    visibility: hidden;
+}
