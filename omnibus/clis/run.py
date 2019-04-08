@@ -2,6 +2,7 @@ from docopt import docopt
 from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files
 from omnibus.libs.content_parser import parse_file,run_testsets
 from omnibus.libs import parsing
+from omnibus.libs import postman as pm
 import os
 from .base import Base
 
@@ -19,9 +20,11 @@ class Run(Base):
     -m --mock MOCK_FILE             Mock Data for test, must be yaml or json dictionary
     -p --print                      Print response's headers and bodies
     --pb                            Only print body
+    --report REPORT                 Report file as XML or HTML
     --ph                            Only print headers
     -i --interactive                Interactive Mode
     --ignore FILE                   Ignore test files or directories
+    --pm                            Run test using Postman Json
     """
 
     is_flask = True         #Default flask app
@@ -36,6 +39,8 @@ class Run(Base):
     interactive = False
     is_remote = False
     f_ignore = list()
+    is_reported = False
+    is_postman = False
 
     def execute(self):
         files = list()
@@ -43,7 +48,11 @@ class Run(Base):
         paths = list() 
         cwd = os.getcwd()
 
-        print(self.args)
+        if self.args['--pm']:
+            self.is_postman = True
+
+        if self.args['--report']:
+            self.is_reported = True
 
         if self.args['--ignore']:
             self.args['--ignore'] = get_path(cwd,self.args['--ignore'])
@@ -63,7 +72,7 @@ class Run(Base):
             self.is_dir = False
             self.is_file = True
             f_tree = self.args['FILE'].split('/')[-1]
-            if not f_tree.startswith('test_'):
+            if not f_tree.startswith('test_') and not self.is_postman:
                 print("Filename must be in 'test_{}' format".format(self.args['FILE']))
                 return 0
             else:
@@ -116,10 +125,19 @@ class Run(Base):
         else:
             mock_vars = None
 
-        for f in files:
-            struct.append(load_yaml(f))
-            paths.append(os.path.dirname(f))
-        
+        print(self.is_postman)
+        if not self.is_postman:
+            for f in files:
+                struct.append(load_yaml(f))
+                paths.append(os.path.dirname(f))
+        else:
+            for f in files:
+                tmp = dict()
+                tmp = pm.parse_postman(f)
+                struct.append(tmp)
+                paths.append(os.path.dirname(f))
+
+
         tests = list()
 
         for t,p,f in zip(struct,paths,files):
@@ -135,5 +153,7 @@ class Run(Base):
                 t.config.is_curl = self.is_curl
                 t.config.is_request = self.is_request
                 t.config.is_remote = self.is_remote
+                t.config.is_reported = self.is_reported
+                t.config.report_type = self.args['--report']
             failure = run_testsets(test)
         
