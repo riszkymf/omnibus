@@ -3,6 +3,7 @@ import os
 import sys
 import json
 
+from urllib.parse import urlparse,urljoin
 from os import listdir
 from os.path import isfile,isdir, join, abspath
 
@@ -166,3 +167,14 @@ def convert_new_line_to_br(text):
     except:
         return "</br>".join(convert(text).split("\n"))
 
+
+def check_url(url):
+    scheme_list = {"acap":674,"afp":548,"dict":2628,"dns":53,"file":None,"ftp":21,"git":9418,"gopher":70,"http":80,"https":443,"imap":143,"ipp":631,"ipps":631,"irc":194,"ircs":6697,"ldap":389,"ldaps":636,"mms":1755,"msrp":2855,"msrps":None,"mtqp":1038,"nfs":111,"nntp":119,"nntps":563,"pop":110,"prospero":1525,"redis":6379,"rsync":873,"rtsp":554,"rtsps":322,"rtspu":5005,"sftp":22,"smb":445,"snmp":161,"ssh":22,"steam":None,"svn":3690,"telnet":23,"ventrilo":3784,"vnc":5900,"wais":210,"ws":80,"wss":443,"xmpp":None}
+    
+    url_split = urlparse(url)
+    if url_split.scheme and not url_split.netloc:
+        if url_split.scheme not in list(scheme_list.keys()):
+            return 'http://'+url
+
+    else :
+        return url
