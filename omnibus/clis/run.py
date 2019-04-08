@@ -125,7 +125,6 @@ class Run(Base):
         else:
             mock_vars = None
 
-        print(self.is_postman)
         if not self.is_postman:
             for f in files:
                 struct.append(load_yaml(f))

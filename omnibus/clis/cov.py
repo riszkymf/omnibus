@@ -186,6 +186,7 @@ class Cov(Base):
                 t.config.print_bodies = self.print_bodies
                 t.config.print_headers = self.print_headers
                 t.config.interactive = self.interactive
+                t.config.is_flask = True
             failures = run_testsets(test)
 
         cov.stop()
