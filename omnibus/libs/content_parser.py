@@ -71,10 +71,10 @@ class TestConfig:
     is_dumped = False
     interactive = False
     skip_term_colors = False
-    is_flask = False
+    is_flask = True
     flask_app = None
-    is_remote = True
-    is_request = True
+    is_remote = False
+    is_request = False
     is_curl = False
     endpoint = None
     global_headers = None

@@ -78,7 +78,7 @@ def convert_to_dict(data):
         retdat = dict()
         retdat[data[0]] = data[1]
         return retdat
-    elif isinstance(data,list):
+    elif isinstance(data,list) and isinstance(data[0],tuple):
         retdat = dict()
         for key,value in data:
             retdat[key] = value

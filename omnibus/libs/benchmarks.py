@@ -122,13 +122,6 @@ class Benchmark(Test):
     # list(aggregates to use)
     aggregated_metrics = dict()
 
-    def ninja_copy(self):
-        """ Optimization: limited, fast copy of benchmark, overrides Test parent method """
-        output = Benchmark()
-        myvars = vars(self)
-        output.__dict__ = myvars.copy()
-        return output
-
     def add_metric(self, metric_name, aggregate=None):
         """ Add a metric-aggregate pair to the benchmark, where metric is a number to measure from curl, and aggregate is an aggregation function
             (See METRICS and AGGREGATES)
@@ -167,26 +160,6 @@ class Benchmark(Test):
         return json.dumps(self, default=safe_to_json)
 
 
-def realize_partial(self, context=None):
-    """ Attempt to template out what is possible for this benchmark """
-    if not self.is_dynamic():
-        return self
-    if self.is_context_modifier():
-        # Enhanceme - once extract is done, check if variables already bound,
-        # in that case template out
-        return self
-    else:
-        copyout = copy.copy(self)
-
-    pass
-
-
-def configure_curl(self, timeout=tests.DEFAULT_TIMEOUT, context=None, curl_handle=None):
-    curl = super().configure_curl(self, timeout=timeout,
-                                  context=context, curl_handle=curl_handle)
-    # Simulate results from different users hitting server
-    curl.setopt(pycurl.FORBID_REUSE, 1)
-    return curl
 
 
 def parse_benchmark(base_url, node):

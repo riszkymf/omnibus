@@ -32,21 +32,6 @@ def load_json(filename):
     return data    
 
 
-def parse_yaml(f_name):
-    d_yaml = load_yaml(f_name)
-
-    filename = list()
-
-    for row in d_yaml:
-        filename.append(row)
-
-
-
-
-def check_yaml(filename):
-    return os.path.isfile(filename)
-
-
 def generate_dir(dirname):
     path = get_path(os.getcwd(),dirname)
     if not os.path.isdir(path):
@@ -58,13 +43,6 @@ def generate_dir(dirname):
 def generate_respons(status, data=None, message=None):
     respons = {"status": status, "data": data, "message": message}
     return respons
-
-
-def copy_dict(dictionary):
-    result = dict()
-    for key, value in dictionary.items():
-        result[key] = value
-    return result
 
 
 def convert(data):
