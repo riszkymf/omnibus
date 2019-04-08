@@ -27,7 +27,8 @@
   - headers: {template: {'Content-Type': 'application/json','Access-Token' : '$token'}}
   - body: {template: '{"domain": "$nm_zone.com"}'}
   - warmup_runs: 7
-  - 'benchmark_runs': '50'
+  - 'benchmark_runs': '10'
+  - output_format: json
   - output_file: 'test_benchmark.json'
   - extract_binds:
       - id_ttl: {jmespath: 'message.id'}
