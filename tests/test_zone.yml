@@ -138,3 +138,9 @@
   - endpoint: "api/zone"
   - method: "GET"
   - headers: {'Content-Type' : 'application/json'}
+
+- test:
+  - name: "Failure"
+  - endpoint: "api/zone"
+  - method: "GET"
+  - expected_status : [500]
