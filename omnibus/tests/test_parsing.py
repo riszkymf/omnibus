@@ -1,5 +1,6 @@
 import sys
 import pytest
+import json
 
 sys.path.append('/home/mfriszky/worksworksworks/branch-sandbox/RESTKnot/API/omnibus/omnibus')
 
@@ -81,5 +82,33 @@ class TestParsing():
                 self.newval = 'cherries'
         
         assert {'newval' : 'cherries'} == safe_to_json(Special())
+
+
+    def test_dict_conversion(self):
+
+        d_dict = { "first_name" : "VM" , "last_name" : "Varga" }
+        d_json = json.dumps(d_dict)
+        d_tuples_list = list(d_dict.items())
+        d_fail = list(d_dict.keys())
+        d_tuple = d_tuples_list[0]
+
+        result = convert_to_dict(d_dict)
+        assert d_dict == result
+
+        result = convert_to_dict(d_json)
+        assert d_dict == result
+
+        result = convert_to_dict(d_tuples_list)
+        assert d_dict == result
+
+        result = convert_to_dict(d_tuple)
+        assert result['first_name'] == "VM"
+
+        with pytest.raises(Exception):
+            result = convert_to_dict(d_fail)
+        with pytest.raises(Exception):
+            result = convert_to_dict("FAIL")
+
+
 
 

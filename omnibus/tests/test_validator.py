@@ -4,7 +4,7 @@ import os
 
 sys.path.append('/home/mfriszky/worksworksworks/branch-sandbox/RESTKnot/API/omnibus/omnibus')
 from omnibus.libs import validators
-from omnibus.libs.validators import register_extractor
+from omnibus.libs.validators import register_extractor,AbstractExtractor,AbstractValidator,register_validator,ComparatorValidator,register_comparator
 from omnibus.libs.binding import Context
 
 class TestValidators():
@@ -540,3 +540,49 @@ class TestValidators():
         assert not (validation_result)
         assert (isinstance(validation_result, validators.Failure))
         assert validation_result.message == "Extract and test validator failed on test: exists(None)"
+
+
+    def test_register_extractor(self):
+
+        fail_name = [7777,'comparator','test','expected','raw_body']
+        success = 'midnight'
+
+        for i in fail_name:
+            with pytest.raises(Exception):
+                register_extractor(i,TestBodyExtractor.parse)
+
+        register_extractor(success,TestBodyExtractor)
+
+
+    def test_register_comparator(self):
+        fail_name = [3456,'regex']
+        success = 'test_compare'
+
+        def compare_but_fail(self):
+            pass
+        
+        for i in fail_name:
+            with pytest.raises(Exception):
+                register_comparator(i,ComparatorValidator.parse)
+        
+        register_validator(success,compare_but_fail)
+
+
+
+
+
+class TestBodyExtractor(AbstractExtractor):
+    """ Extractor that returns the full request body """
+
+    extractor_type = "test"
+    is_header_extractor = False
+    is_body_extractor = True
+
+    def extract_internal(self, query=None, args=None, body=None, headers=None):
+        return body
+
+    @classmethod
+    def parse(cls, config, extractor_base=None):
+        # Doesn't take any real configuration
+        base = TestBodyExtractor()
+        return base
