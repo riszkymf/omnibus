@@ -1,6 +1,6 @@
 # Writing Test File
 
-Currently omnibus only supports test files in yaml format. Basically test files is divided into two sections : Configuration and tests. Test files must be written in **test_yourtestname.yml** format.
+Currently omnibus only supports test files in yaml and Postman JSON. Basically test files is divided into two sections : Configuration and tests. Test files must be written in **test_yourtestname.yml** format.
 
 ---------------------
 ### Configuration :
