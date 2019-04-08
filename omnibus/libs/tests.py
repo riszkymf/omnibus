@@ -6,7 +6,8 @@ import pycurl
 import requests
 import sys
 import flask
-from urllib.parse import urljoin
+import validators as val
+from urllib.parse import urljoin,urlparse
 from flask.testing import FlaskClient
 from . import parsing
 from . import validators
@@ -19,12 +20,9 @@ from past.builtins import basestring
 from requests.auth import *
 
 try:
-    from cStringIO import StringIO as MyIO
-except:
-    try:
-        from StringIO import StringIO as MyIO
-    except ImportError:
-        from io import BytesIO as MyIO
+    from StringIO import StringIO as MyIO
+except ImportError:
+    from io import BytesIO as MyIO
 
 """
 Pull out the Test objects and logic associated with them
@@ -419,7 +417,15 @@ class Test(object):
             request = requests.Request()
 
         ## URL, TIMEOUT, METHOD
-        request.url = self.url
+        url_check = val.url(self.url)
+
+        if url_check:
+            request.url = self.url
+        else:
+            url = check_url(self.url)
+            request.url = url
+            
+
         request.timeout = timeout
         request.method = self.method
 
@@ -467,7 +473,6 @@ class Test(object):
 
             u'body': [ContentHandler.parse_content]
         }
-
         def use_config_parser(configobject, configelement, configvalue):
 
             myparsing = CONFIG_ELEMENTS.get(configelement)
@@ -479,7 +484,6 @@ class Test(object):
         for configelement, configvalue in node.items():
             if use_config_parser(mytest, configelement, configvalue):
                 continue
-
             if configelement == u'endpoint':
                 mytest.endpoint = configvalue
                 if mytest.local_url:
@@ -499,12 +503,16 @@ class Test(object):
                     mytest.url = urljoin(
                         url_val, coerce_to_string(configvalue))
 
-            if configelement == u'url':
+            if configelement == 'url':
                 if isinstance(configvalue, dict):
                     val = parsing.lowercase_keys(configvalue)['data']
-                    val = val[u'template']
+                    val = val['template']
                     assert isinstance(val, str) or isinstance(val, int)
-                    mytest.local_url = str(val)
+                    if mytest.local_url :
+                        url = mytest.local_url
+                    else :
+                        url = val
+                    mytest.set_url(url,isTemplate=True)
                 else:
                     assert isinstance(configvalue, str) or isinstance(
                         configvalue, int)
@@ -586,6 +594,5 @@ class Test(object):
             else:
                 url_val = base_url
             mytest.url = urljoin(url_val,global_endpoint)
-
-
+        mytest._url = mytest.url
         return mytest
