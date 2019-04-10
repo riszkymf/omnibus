@@ -314,5 +314,48 @@ Query results is shown on table below.
 |```'max_by(test11.people, &age).name'``` | ```'a'``` |
 |```"test12.myarray[?contains(@, 'foo') == `true`]"``` | ```"['foo', 'foobar', 'barfoo', 'barfoobaz']"``` |
 
+-------------------
+
+## Authorization
+
+Currently Omnibus supports 4 Types of Authorization, namely : OAuth1 , Digest, Basic requests and Bearer Token
+
+Will be implemented : Oauth2 obtains and keystone
 
 
+### 1.OAuth1
+
+- name: OAuth1
+- Parameters : consumerkey,consumersecret,token,tokensecret
+
+Example
+```yaml
+- authorization: { oauth1: {'consumerkey': 'your_key', 'consumersecret':'your_secret', 'token' : 'your_token', 'tokensecret': 'your_token_secret'}}
+```
+
+### 2.Digest
+ - name: digest
+ - parameters: username,password
+
+ Example:
+ ```yaml
+- authorization: { digest: { 'username': 'username', 'password': 'password'}}
+ ```
+
+ ### 3.Basic
+ - name: basic
+ - parameters: username,password
+
+ Example:
+ ```yaml
+ - authorization: { basic: { 'username' : 'username', 'password' : 'password' }}
+ ```
+
+### 4. Bearer Token
+- name : bearer
+- parameters: token
+
+Example:
+```yaml
+- authorization: { bearer: {'token' : 'Bearer yourtoken' } }
+```

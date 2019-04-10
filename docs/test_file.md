@@ -19,6 +19,7 @@ There can only be one configuration per test file. Test configuration will set y
   - flask: { path: app.module , name: create_app}
   - variable_binds: {'variable': 'value.com'}
   - expected_status: [200,205]
+  - authorization: {basic: {'username': 'your_username','password':'your_password'}}
 ```
 Notes:
 - Variables that is written in configuration will be overridden if you write it in test section. For example if you write endpoint twice,  '/login' and '/logout' in configuration and test section  respectively, your test will use '/logout' as endpoint.
