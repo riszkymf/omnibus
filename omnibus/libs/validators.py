@@ -193,7 +193,6 @@ class AbstractExtractor(object):
     def configure_base(cls, config, extractor_base):
         """ Parse config object and do basic config on an Extractor
         """
-
         if isinstance(config, dict):
             try:
                 config = config["template"]

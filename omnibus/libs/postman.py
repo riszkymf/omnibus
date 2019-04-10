@@ -27,10 +27,11 @@ def clean_raw_string(txt):
 
 def parse_postman_auth(data):
     auth = dict()
-    auth['type'] = data['type']
-    for key,val in data[data['type']].items():
-        auth[key] = val
-    return auth
+    result = dict()
+    for item in data[data['type']]:
+        auth[item['key']] = item['value']
+    result[data['type']] = auth
+    return result
 
 
 def parse_postman_variables(data):
@@ -50,7 +51,7 @@ def parse_postman_config(myjson):
     for key,path in json_path:
         config_details = dict()
         try:
-            if key == 'authorization':
+            if key == 'authorization' or key == 'auth':
                 config_details[key] = parse_postman_auth(myjson['auth'])
             elif key == 'variable_binds':
                 config_details[key] = parse_postman_variables(myjson['variable'])
@@ -74,15 +75,6 @@ def parse_postman_body(p_string):
         else:
             clean_body = clean_raw_string(p_string[p_string["mode"]])
         return clean_body
-
-
-# def parse_postman_event(script_list):
-
-
-
-#     def is_valid(script):
-#         if 
-    
 
 
 def parse_postman_test(mytest):

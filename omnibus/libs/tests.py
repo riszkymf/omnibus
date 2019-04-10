@@ -279,6 +279,16 @@ class Test(object):
         return json.dumps(self, default=parsing.safe_to_json)
 
     def configure_curl(self, timeout=DEFAULT_TIMEOUT, context=None, curl_handle=None):
+        
+        if self.auth:
+            if self.auth.name.lower() == 'basic':
+                auth = self.auth.get_auth()
+                self.auth_username = auth.username.encode('utf8')
+                self.auth_password = auth.username.encode('utf8')
+            else:
+                auth = self.auth.get_headers()
+                for key,val in auth.items():
+                    self.headers[key] = val
 
         if curl_handle:
             curl = curl_handle
@@ -362,8 +372,6 @@ class Test(object):
         headers.append("Expect:")
         headers.append("Connection: close")
         curl.setopt(curl.HTTPHEADER, headers)
-
-        
         return curl
 
     def configure_flask_test(self, context=None, app=None):
@@ -371,7 +379,8 @@ class Test(object):
             raise ValueError("Flask application is not called")
 
         with app.test_client() as client:
-
+            if self.auth:
+                auth = self.auth.get_auth()
             endpoint = self.endpoint
             if self.headers:
                 if 'Content-Type' in self.headers:
@@ -393,19 +402,19 @@ class Test(object):
                     body = None
             if self.method == 'GET':
                 result = client.get(
-                    endpoint, content_type=content_type, headers=self.headers)
+                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
             elif self.method == 'POST':
                 result = client.post(
-                    endpoint, data=body, content_type=content_type, headers=self.headers)
+                    endpoint, data=body, content_type=content_type, headers=self.headers,auth=auth)
             elif self.method == 'DELETE':
                 result = client.delete(
-                    endpoint, content_type=content_type, headers=self.headers)
+                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
             elif self.method == 'UPDATE':
                 result = client.update(
-                    endpoint, content_type=content_type, headers=self.headers)
+                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
             elif self.method == 'PUT':
                 result = client.put(
-                    endpoint, content_type=content_type, headers=self.headers)
+                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
 
             return result
 
@@ -418,6 +427,9 @@ class Test(object):
 
         ## URL, TIMEOUT, METHOD
         url_check = val.url(self.url)
+
+        if self.auth:
+            auth = self.auth.get_auth()
 
         if url_check:
             request.url = self.url

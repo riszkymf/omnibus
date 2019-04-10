@@ -17,6 +17,7 @@ from . import generator
 from . import parsing
 from . import util
 from . import binding
+from . import auth
 from .six import text_type
 from . import validators
 from .tests import Test, DEFAULT_TIMEOUT
@@ -83,8 +84,6 @@ class TestConfig:
     report_type = ""
     reportdest = 'runcov'
     auth = None
-    auth_username = None
-    auth_password = None
 
 
     def __str__(self):
@@ -215,6 +214,11 @@ def parse_configuration(node, base_config=None):
                 print('\033[91m CHECK YOUR FLASK APP ON YOUR TEST CONFIGURATION \033[0m')
         elif key == 'headers':
             test_config.global_headers = value
+        
+        elif key == 'auth' or key == 'authorization':
+            tempauth = parsing.lowercase_keys(value)['data']
+            for key,val in tempauth.items():
+                test_config.auth = auth.parse_authenticators(key,val)
     return test_config
 
 
@@ -276,6 +280,8 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
     if my_context is None:
         my_context = Context()
     
+    if test_config.auth:
+        mytest.auth = test_config.auth
 
     mytest.update_context_before(my_context)
     templated_test = mytest.realize(my_context)
