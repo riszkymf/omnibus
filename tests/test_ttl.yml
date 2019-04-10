@@ -7,7 +7,9 @@
   - endpoint: "api/ttl"
   - headers: {'Content-Type': 'application/json'}
   - variable_binds: {'mock_ttl': "6600", 'urlt' : "http://127.0.0.1:6968"}
-  
+  - auth: { bearer : {"token" : "test_bearer" }}
+
+
 - test:
   - name: "Login"
   - method: "POST"
