@@ -872,6 +872,36 @@ def metrics_to_tuples(raw_metrics):
         output.append(new_row)
     return output
 
+def register_extensions(modules):
+    """ Import the modules and register their respective extensions """
+    if isinstance(modules, str):  
+        modules = [modules]
+    for ext in modules:
+        segments = ext.split('.')
+        module = segments.pop()
+        package = '.'.join(segments)
+        module = __import__(ext, globals(), locals(), package)
+
+        extension_applies = {
+            'VALIDATORS': validators.register_validator,
+            'COMPARATORS': validators.register_comparator,
+            'VALIDATOR_TESTS': validators.register_test,
+            'EXTRACTORS': validators.register_extractor,
+            'GENERATORS': generator.register_generator
+        }
+
+        has_registry = False
+        for registry_name, register_function in extension_applies.items():
+            if hasattr(module, registry_name):
+                registry = getattr(module, registry_name)
+                for key, val in registry.items():
+                    register_function(key, val)
+                if registry:
+                    has_registry = True
+
+        if not has_registry:
+            raise ImportError(
+                "Extension to register did not contain any registries: {0}".format(ext))
 
 def write_benchmark_json(file_out, benchmark_result, benchmark, test_config=TestConfig()):
     """ Writes benchmark to file as json """

@@ -1,0 +1,40 @@
+- config:
+  - desc: configuration for test set
+  - testset: "TTL Endpoint"
+  - scope: configuration working scope
+  - group: "TTL Endpoint"
+  - url: "http://127.0.0.1:6968/"
+  - endpoint: "api/ttl"
+  - generator: 
+    - dnslist : {type : random_text, length: 5}
+
+
+- test:
+  - name: "TestLogin"
+  - endpoint: "api/login"
+  - method: "POST"
+  - headers: {'Content-Type': 'application/json'}
+  - body: '{ "username" : "test@biznetgio.com" , "password": "BiznetGio2017"}'
+  - extract_binds:
+      - token: {jmespath: 'data.token'}
+
+
+- benchmark: # create entity
+  - name: "Test Post"
+  - endpoint: "api/user/dnscreate"
+  - method: 'POST'
+  - generator_binds: { nm_zone: dnslist}
+  - headers: {template: {'Content-Type': 'application/json','Access-Token' : '$token'}}
+  - body: {template: '{"domain": "$nm_zone.com"}'}
+  - warmup_runs: 7
+  - 'benchmark_runs': '10'
+  - output_format: json
+  - output_file: 'test_benchmark.json'
+  - extract_binds:
+      - id_ttl: {jmespath: 'message.id'}
+  - metrics:
+    - total_time
+    - total_time: mean
+    - total_time: median
+    - size_download
+    - speed_download: median

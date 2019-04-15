@@ -380,7 +380,9 @@ class Test(object):
 
         with app.test_client() as client:
             if self.auth:
-                auth = self.auth.get_auth()
+                auth = self.auth.get_headers()
+                for key,val in auth:
+                    self.headers[key] = val
             endpoint = self.endpoint
             if self.headers:
                 if 'Content-Type' in self.headers:
@@ -402,19 +404,19 @@ class Test(object):
                     body = None
             if self.method == 'GET':
                 result = client.get(
-                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
+                    endpoint, content_type=content_type, headers=self.headers)
             elif self.method == 'POST':
                 result = client.post(
-                    endpoint, data=body, content_type=content_type, headers=self.headers,auth=auth)
+                    endpoint, data=body, content_type=content_type, headers=self.headers)
             elif self.method == 'DELETE':
                 result = client.delete(
-                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
+                    endpoint, content_type=content_type, headers=self.headers)
             elif self.method == 'UPDATE':
                 result = client.update(
-                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
+                    endpoint, content_type=content_type, headers=self.headers)
             elif self.method == 'PUT':
                 result = client.put(
-                    endpoint, content_type=content_type, headers=self.headers,auth=auth)
+                    endpoint, content_type=content_type, headers=self.headers)
 
             return result
 

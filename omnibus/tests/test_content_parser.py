@@ -53,3 +53,6 @@ class TestContentParser():
         self.assertEqual(('date', 'Mon, 29 Dec 2014 02:42:33 GMT'), headers[0])
         self.assertEqual(('accept', 'text/html'), headers[1])
         
+    def test_import_extensions(self):
+        extension = 'docs.example.test_extension'
+        register_extensions(extension)
