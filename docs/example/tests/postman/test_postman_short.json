@@ -1,0 +1,541 @@
+{
+	"info": {
+		"_postman_id": "f132c1fc-c96b-4112-b0c9-f86ac15d4ff8",
+		"name": "Test Templated Restknot copy",
+		"description": "ADASDASDA",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "USER_SIGNING Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "526c26de-0bda-4b77-b99a-0e857d75bc65",
+						"exec": [
+							"",
+							"`omnibus WRITE IN YAML FORMAT",
+							"    validate : ",
+							"        - assertTrue: {jmespath: data.token, test: exist}",
+							"    extract_binds:",
+							"        - ttoken : {jmespath: data.token}",
+							"`",
+							"",
+							"",
+							"pm.test(\"response is ok\", function () {",
+							"    let responseBody = pm.response.json()",
+							"    console.log(responseBody.data.token)",
+							"    console.log(pm.response.headers)",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "test@biznetgio.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "BiznetGio2017",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "127.0.0.1:6968/api/login",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "6968",
+					"path": [
+						"api",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TYPE_ALL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7b8e5208-f979-41ba-8e50-0d0b81751cc7",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{ttoken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{domain}}/api/type",
+					"protocol": "http",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"type"
+					]
+				},
+				"description": "YAAA"
+			},
+			"response": []
+		},
+		{
+			"name": "TYPE_ADD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"insert\": {\n      \"fields\": {\n      \t\"nm_type\": \"A\"\n      }\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/type",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"type"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TYPE_WHERE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{token}}",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"where\":{\"tags\":{\"nm_type\": \"CNAME\"}}}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/type",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"type"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TYPE_REMOVE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"remove\": {\n      \"tags\": {\n      \t\"id_type\": \"402329670102745089\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/type",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"type"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TTL_ALL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "01ab552c-502f-4e2b-8718-7959b7ac6a32",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody)",
+							"console.log(jsonData.data[0].nm_ttl)"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "4f0e2b7a-6ecc-47ae-b0f3-326a74c77862",
+						"exec": [
+							"/*This is omnibus script-1",
+							"  This is omnibus script-2",
+							"*/",
+							"console.log(pm.variables.get(\"domain\"))"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{domain}}/api/ttl",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"ttl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TTL_ADD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"insert\": {\n      \"fields\": {\n      \t\"nm_ttl\": \"43200\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/ttl",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"ttl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TTL_WHERE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"where\": {\n      \"tags\": {\n      \t\"nm_ttl\": \"1800\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/ttl",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"ttl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TTL_REMOVE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"remove\": {\n      \"tags\": {\n      \t\"id_ttl\": \"402332261606883329\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/ttl",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"ttl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ZONE_ALL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "491ff74e-9eff-482a-bbb5-bcb617742834",
+						"exec": [
+							"/*",
+							"assertTrue: {Jmespath: data.id , test: exists}",
+							"assertTrue: {Jmespath: data.message , test: exists}*/",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "c78314e8-9021-4b47-b989-1cad4af518e6",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{token}}",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{domain}}/api/zone?Access-Token={{token}}",
+					"path": [
+						"api",
+						"zone"
+					],
+					"query": [
+						{
+							"key": "Access-Token",
+							"value": "{{token}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ZONE_ADD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"insert\": {\n      \"fields\": {\n      \t\"nm_zone\": \"ocha.com\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/zone",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"zone"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ZONE_REMOVE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"remove\": {\n      \"tags\": {\n      \t\"id_zone\": \"402212410013057025\"\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/zone",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"zone"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ZONE_WHERE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Access-Token",
+						"value": "{{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"where\": {\n      \"tags\": {\n      \t\"nm_zone\": []\n      }\n      \t\n   }\n}"
+				},
+				"url": {
+					"raw": "{{domain}}/api/zone",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"zone"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "080e7a38-284d-4405-999f-ce7d00372d39",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "01c7f2a7-5933-421f-9a0d-adec51945a1d",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "927845e1-6594-43c8-8566-d2c0a8368d89",
+			"key": "domain",
+			"value": "127.0.0.1:6968",
+			"type": "string"
+		},
+		{
+			"id": "5e086373-4730-431d-b43e-9fcde7a3bc2d",
+			"key": "token",
+			"value": "\"126d0f13de828825b53fb41dfb70e50876b11bcf1db5c36221d8f1609b017d69\"",
+			"type": "string"
+		}
+	]
+}

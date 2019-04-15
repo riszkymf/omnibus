@@ -40,6 +40,11 @@ omnibus run [FILE] [options] [-r|-c|-f]
 - #### [--ignore]:
     Ignore tests file or folders.
 
+- #### [--report REPORT]:
+    Report Test Result in HTML or XML
+
+- #### [--pm]:
+    Run test using postman json file
 
 
 
@@ -49,7 +54,7 @@ omnibus run [FILE] [options] [-r|-c|-f]
 Testing your local Rest API using flask and report the coverage.
 
 ```
-omnibus run [FILE] [options]
+omnibus cov [FILE] [options]
 ```
 
 #### Options :
