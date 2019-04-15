@@ -21,17 +21,18 @@ from omnibus.libs import util
 
 
 
-from omnibus.omnibus.libs.content_parser import *
+from omnibus.libs.content_parser import *
 import os
 import requests
-from omnibus.omnibus.libs.binding import Context
-from omnibus.omnibus.libs import util
+from omnibus.libs.binding import Context
+from omnibus.libs import util
 base_url = 'http://127.0.0.1:6968/'
-test_file = ['omnibus/omnibus/test_copy.yml']
+test_file = ['tests/test_ttl.yml']
 test_file = test_file[0]
 test_structure = util.load_yaml(test_file)
 var = {"mock_zone": 'test.com'}
-tests = parse_file(test_structure,test_file,vars=var,global_url=base_url)
+tests = parse_file(test_structure,test_file)
+
 result = run_testsets(tests)
 
 from omnibus.libs.util import *
