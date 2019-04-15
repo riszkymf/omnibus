@@ -36,11 +36,11 @@ def parse_postman_auth(data):
 
 def parse_postman_variables(data):
     binded = dict()
-    for i in data:
-        if i['type'].lower() == 'string':
-            binded[i['key']] = i['value']
-        elif i['type'].lower() == 'integer':
-            binded[i['key']] = int(i['value'])
+    for item in data:
+        if item['type'].lower() == 'string':
+            binded[item['key']] = item['value']
+        elif item['type'].lower() == 'integer':
+            binded[item['key']] = int(item['value'])
     return binded
 
 
