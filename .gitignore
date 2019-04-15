@@ -107,7 +107,7 @@ ENV/
 
 .vscode
 
-
+# other
 test.yml
 test_rest.yml
 yaml_dump.yml
@@ -117,8 +117,6 @@ appcov
 app
 app_cont
 manage.py
-
-
 Untitled-1
 apptest.txt
 bootstrap.css
