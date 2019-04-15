@@ -17,18 +17,18 @@ class BearerAuth(AuthBase):
 
     def __init__(self,token):
         if 'bearer' in token.lower():
-            self.token = token
+            self.Authorization = token
         else:
-            self.token = "Bearer " + token
+            self.Authorization = "Bearer " + token
     
     def __eq__(self,other):
-        return all([self.token == getattr(other,'token',None)])
+        return all([self.Authorization == getattr(other,'Authorization',None)])
     
     def __ne__(self,other):
         return not self == other
 
     def __call__(self,r):
-        r.headers['Authorization'] = self.token
+        r.headers['Authorization'] = self.Authorization
 
 
 
@@ -122,6 +122,11 @@ class OAuth1Authenticators(Auth):
         
         return auth
 
+    def get_headers(self):
+        mydata = copy.copy(self.config)
+        return mydata
+
+
     @classmethod
     def parse(cls,config):
         base = OAuth1Authenticators()
@@ -165,20 +170,24 @@ class BearerAuthentication(Auth):
 
     def get_auth(self,args=None):
         mydata = copy.copy(self.config)
-        token = mydata['token']
+        token = mydata['Authorization']
       
         auth = BearerAuth(token)
         return auth
 
 
     def get_headers(self,args=None):
-        self.headers = copy.copy(self.config)
+        self.headers['Authorization'] = self.config['Authorization']
         return self.headers
 
     @classmethod
     def parse(cls,config):
         if config['token'].split(" ")[0] != "Bearer":
-            config["token"] = "Bearer "+config["token"]
+            token = "Bearer "+config["token"]
+        else:
+            token = config['token']
+        config = dict()
+        config['Authorization'] = token
         base = BearerAuthentication()
         return cls.configure_base(config,base)
         return base
