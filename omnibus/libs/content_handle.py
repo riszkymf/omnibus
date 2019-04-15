@@ -1,8 +1,8 @@
 import os
 import sys
-from omnibus.libs.util import convert
-from omnibus.libs.binding import *
-from omnibus.libs.parsing import *
+from .util import convert
+from .binding import *
+from .parsing import *
 
 from past.builtins import basestring
 

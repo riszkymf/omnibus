@@ -1,0 +1,140 @@
+- config:
+  - desc: configuration for test set
+  - testset: "Creating Zone"
+  - group: "Create Zone, Record and Content"
+  - scope: configuration working scope
+  - url: "http://127.0.0.1:6968"
+  - flask : {path: app , name: create_app}
+  - variable_binds: {'mock_zone': 'test.com'}
+- test: 
+  - name: "TestInputZone"
+  - endpoint: "api/zone"
+  - group: CRUD
+  - method: "POST"
+  - body: {template: '{"insert":{"fields":{"nm_zone": "$mock_zone"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds: 
+      - 'id_zone' : {'jmespath' : 'message.id'}
+  - validators:
+      - assertTrue: {jmespath: 'message.id', test: exists }
+- test: 
+  - name: "TestSearchZone"
+  - endpoint: "api/zone"
+  - method: "POST"
+  - group : CRUD
+  - body: {template: '{"where":{"tags":{"id_zone": "$id_zone"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - validators:
+      - assertTrue: {jmespath: 'message', test: exists }
+- test: 
+  - name: "TestSynchronizeZone"
+  - endpoint: "api/sendcommand"
+  - group: Synchronize
+  - method: "POST"
+  - body: {template: '{"conf-insert":{"tags":{"id_zone":"$id_zone"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - validators:
+      - assertTrue: {jmespath: 'message', test: exists }
+- test: 
+  - name: "TestGetTTL"
+  - endpoint: "api/ttl"
+  - method: "POST"
+  - group : "Get Data"
+  - body: '{"where":{"tags":{"nm_ttl": "1800"}}}'
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds:
+      - 'id_ttl': {'jmespath': 'data[0].id_ttl'}
+  - validators:
+      - assertTrue: {jmespath: 'message', test: exists }
+- test:
+  - name: "TestGetRecordId"
+  - endpoint: "api/type"
+  - method: "POST"
+  - group : "Get Data"
+  - body: '{"where":{"tags":{"nm_type": "CNAME"}}}'
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds:
+      - 'id_type': {jmespath: 'data[0].id_type'}
+  - validators:
+      - assertTrue: {jmespath: 'message', test: exists}
+- test:
+  - name: "TestInsertRecord"
+  - endpoint: "api/record"
+  - method: "POST"
+  - body : {template: '{"insert":{"fields":{"nm_record":"www","date_record":"2018070410","id_zone":"$id_zone","id_type":"$id_type"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds:
+      - 'id_record': {'jmespath': 'message.id'}
+
+- test:
+  - name: "TestInsertTTLData"
+  - endpoint: "api/ttldata"
+  - method: "POST"
+  - body: {template : '{"insert":{"fields":{"id_record":"$id_record","id_ttl":"$id_ttl"}}}'}
+  - headers: {'Content-Type': 'application/json'}
+  - extract_binds:
+      - 'id_ttldata': {jmespath: 'message.id'}
+
+- test:
+  - name: "TestInsertContent"
+  - endpoint: "api/content"
+  - method: "POST"
+  - headers: {'Content-Type': 'application/json'}
+  - body: {template: '{"insert":{"fields":{"id_ttldata":"$id_ttldata","nm_content":"CNAMECONTENT"}}}'}
+
+
+- test:
+  - name: "TestGetMXRecord"
+  - endpoint: "api/type"
+  - method: "POST"
+  - body : '{"where":{"tags":{"nm_type": "MX"}}}'
+  - headers: {'Content-Type': 'application/json'}
+  - extract_binds:
+      - 'id_mx': {jmespath: 'data[0].id_type'}
+
+- test:
+  - name: "TestInsertRecord"
+  - endpoint: "api/record"
+  - method: "POST"
+  - body : {template: '{"insert":{"fields":{"nm_record":"MXRECORD","date_record":"2018070410","id_zone":"$id_zone","id_type":"$id_mx"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - extract_binds:
+      - 'id_record2': {'jmespath': 'message.id'}
+
+- test:
+  - name: "TestInsertTTLDataMX"
+  - endpoint: "api/ttldata"
+  - method: "POST"
+  - body: {template : '{"insert":{"fields":{"id_record":"$id_record2","id_ttl":"$id_ttl"}}}'}
+  - headers: {'Content-Type': 'application/json'}
+  - extract_binds:
+      - 'id_ttldata2': {jmespath: 'message.id'}
+
+- test:
+  - name: "TestInsertContentMX"
+  - endpoint: "api/content"
+  - method: "POST"
+  - headers: {'Content-Type': 'application/json'}
+  - body: {template: '{"insert":{"fields":{"id_ttldata":"$id_ttldata2","nm_content":"MXCONTENT"}}}'}
+
+- test:
+  - name: "TestInsertContentSerial"
+  - endpoint: "api/content_serial"
+  - method: "POST"
+  - headers: {'Content-Type': 'application/json'}
+  - body: {template: '{"insert":{"fields":{"nm_content_serial":"38400","id_record":"$id_record2"}}}'}
+      
+- test: 
+  - name: "TestRemoveZone"
+  - endpoint: "api/zone"
+  - method: "POST"
+  - body: {template: '{"remove":{"tags":{"id_zone":"$id_zone"}}}'}
+  - headers: {'Content-Type' : 'application/json'}
+  - validators:
+      - assertTrue: {jmespath: 'message', test: exists }
+
+- test:
+  - name: "TestGetAllZone"
+  - endpoint: "api/zone"
+  - method: "GET"
+  - headers: {'Content-Type' : 'application/json'}

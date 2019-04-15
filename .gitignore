@@ -112,3 +112,8 @@ test.yml
 test_rest.yml
 yaml_dump.yml
 os
+.coveragec
+appcov
+app
+app_cont
+manage.py

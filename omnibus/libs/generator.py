@@ -4,8 +4,8 @@ import os
 import sys
 import json
 
-from omnibus.libs import parsing
-from omnibus.libs.parsing import flatten_dictionaries, lowercase_keys, safe_to_bool
+from . import parsing
+from .parsing import flatten_dictionaries, lowercase_keys, safe_to_bool
 
 
 INT32_MAX_VALUE = 2147483647
@@ -49,7 +49,7 @@ def generate_ids(starting_id=1, increment=1):
 
 def generator_basic_ids():
     """ Return ids generator starting at 1"""
-    return factory_generate_ids(1)()
+    return generate_ids(1)()
 
 
 def generator_random_int32():
@@ -171,7 +171,7 @@ def parse_random_text_generator(configuration):
 
     if characters:
         return factory_generate_text(
-            legal_characters=character, min_length=min_length, max_length=max_length
+            legal_characters=characters, min_length=min_length, max_length=max_length
         )()
     else:
         return factory_generate_text(min_length=min_length, max_length=max_length)
@@ -196,7 +196,7 @@ def register_generator(typename, parse_function):
       typename is the new generator type name,
       parse_function will parse a configuration object
   """
-    if not isinstance(typename, basestring):
+    if not isinstance(typename, str):
         raise TypeError(
             "Generator type name {0} is invalid, must be a string".format(typename)
         )
@@ -205,13 +205,15 @@ def register_generator(typename, parse_function):
     GENERATOR_TYPES.add(typename)
     GENERATOR_PARSING[typename] = parse_function
 
+register_generator('choice', parse_choice_generator)
+
 
 def parse_generator(configuration):
     """ Parses a configuration built from yaml and returns generator.
       Configuration should be a map
   """
 
-    configuration = lowercase_keys(flatten_dictionaries(configuration))
+    configuration = lowercase_keys(flatten_dictionaries(configuration)['data'])['data']
     gen_type = str(configuration.get(u"type"))
 
     if gen_type not in GENERATOR_TYPES:
@@ -234,10 +236,10 @@ def parse_generator(configuration):
             increment = 1
         else:
             increment = int(increment)
-        return factory_generate_ids(start, increment)()
-    elif gen_type == u"random_int":
+        return generate_ids(start, increment)()
+    elif gen_type == "random_int":
         return generator_random_int32()
-    elif gen_type == u"random_text":
+    elif gen_type == "random_text":
         return parse_random_text_generator(configuration)
     elif gen_type in GENERATOR_TYPES:
         return GENERATOR_PARSING[gen_type](configuration)
