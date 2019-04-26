@@ -4,7 +4,7 @@ import sys
 from coverage import Coverage
 
 from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files,check_exist
-from omnibus.libs.content_parser import parse_file,run_testsets
+from omnibus.libs.content_parser import parse_file,run_testsets,register_extensions
 from omnibus.libs import parsing
 
 from.base import Base
@@ -36,6 +36,7 @@ class Cov(Base):
     --ignore IGDIR                  Test directory to be ignored.
     --sv DATA_FILE                  Save coverage data to file for later use, example : 'savedat.coverage' .Default is .coverage 
     --rep-file FILE                 Write summary report
+    --import-extensions             Import extension code
     """
 
     dir_out = None
@@ -72,6 +73,10 @@ class Cov(Base):
             self.f_ignore = list()
             
         path = get_path(cwd,self.args['FILE'])
+
+        if self.args['--import-extensions']:
+            register_extensions(self.args['--import-extensions'])
+
         if os.path.isdir(path):
             self.is_dir = True
             self.is_file = False

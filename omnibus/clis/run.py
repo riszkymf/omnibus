@@ -1,6 +1,6 @@
 from docopt import docopt
 from omnibus.libs.util import load_yaml,load_json,get_all,get_path,get_path_files
-from omnibus.libs.content_parser import parse_file,run_testsets
+from omnibus.libs.content_parser import parse_file,run_testsets,register_extensions
 from omnibus.libs import parsing
 from omnibus.libs import postman as pm
 import os
@@ -25,6 +25,7 @@ class Run(Base):
     -i --interactive                Interactive Mode
     --ignore FILE                   Ignore test files or directories
     --pm                            Run test using Postman Json
+    --import-extensions             Import python code
     """
 
     is_flask = True         #Default flask app
@@ -61,6 +62,10 @@ class Run(Base):
             self.f_ignore = list()
             
         path = get_path(cwd,self.args['FILE'])
+
+        if self.args['--import-extensions']:
+            register_extensions(self.args['--import-extensions'])
+
         if os.path.isdir(path):
             self.is_dir = True
             self.is_file = False
