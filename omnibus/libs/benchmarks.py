@@ -4,10 +4,12 @@ import json
 import pycurl
 import copy
 import sys
+import validators as val
 
 from . import tests
 from .tests import Test
 from .parsing import *
+from .util import check_url
 
 from past.builtins import basestring
 
@@ -46,7 +48,6 @@ METRICS = {
     'total_time': pycurl.TOTAL_TIME,
 
 
-    # Transfer sizes and speeds
     'size_download': pycurl.SIZE_DOWNLOAD,
     'size_upload': pycurl.SIZE_UPLOAD,
     'request_size': pycurl.REQUEST_SIZE,
@@ -113,10 +114,15 @@ class Benchmark(Test):
     benchmark_runs = 100  # Times call is executed to generate benchmark results
     output_format = u'csv'
     output_file = None
-
+    concurrency = 1
+    timeout = None
+    url = None
+    url_list = None
+    multi_url = False
+    endpoint_list = None
+    is_concurrent = False
     # Metrics to gather, both raw and aggregated
     metrics = set()
-
     raw_metrics = set()  # Metrics that do not have any aggregation performed
     # Metrics where an aggregate is computed, maps key(metric name) ->
     # list(aggregates to use)
@@ -162,7 +168,7 @@ class Benchmark(Test):
 
 
 
-def parse_benchmark(base_url, node):
+def parse_benchmark(base_url, node, test_config=None):
     """ Try building a benchmark configuration from deserialized configuration root node """
     node = lowercase_keys(flatten_dictionaries(node)['data'])['data']  # Make it usable
     benchmark = Benchmark()
@@ -185,6 +191,26 @@ def parse_benchmark(base_url, node):
             if not isinstance(value, basestring):
                 raise ValueError("Invalid output file format")
             benchmark.output_file = value
+        elif key == 'timeout':
+            benchmark.timeout = value
+        elif key == u'concurrency' or key == 'concurrent':
+            if value > 1:    
+                benchmark.concurrency = value
+                benchmark.is_concurrent = True
+        elif key == 'url':
+            benchmark.url = value
+        elif key == 'url_list':
+            tmp = parse_list(value)
+            benchmark.url_list = list()
+            for url in tmp:
+                if not val.url(url):
+                    benchmark.url_list.append(check_url(url))
+                else:
+                    benchmark.url_list.append(url)
+            benchmark.multi_url = True
+        elif key == 'endpoint_list':
+            benchmark.endpoint_list = parse_list(value)
+            benchmark.multi_url = True
         elif key == u'metrics':
             if isinstance(value, basestring):
                 # Single value
@@ -223,3 +249,25 @@ def parse_benchmark(base_url, node):
                     "Invalid benchmark metric datatype: " + str(value))
 
     return benchmark
+
+def parse_list(value):
+    if isinstance(value,list):
+        result = value
+    elif isinstance(value,str):
+        tmp = value.replace(" ","")
+        result = tmp.split(",")
+    else:
+        raise TypeError("Endpoint/Value List have to be string or list")
+    return result
+
+def parse_config(benchmark,benchmark_report):
+    
+    if 'url' not in  benchmark_report.config:
+        benchmark_report.config['url' ] = benchmark._url
+    if 'concurrency' not in benchmark_report.config and benchmark.is_concurrent:
+        benchmark_report.config['concurrency'] = benchmark.concurrency
+    if 'benchmark_runs' not in benchmark_report.config:
+        benchmark_report.config['benchmark_runs'] = benchmark.benchmark_runs
+    
+    return benchmark_report
+
