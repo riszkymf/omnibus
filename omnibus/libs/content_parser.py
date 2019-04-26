@@ -11,7 +11,7 @@ import copy
 import csv
 
 
-from .benchmarks import Benchmark, AGGREGATES, METRICS, parse_benchmark
+from .benchmarks import Benchmark, AGGREGATES, METRICS, parse_benchmark, parse_config
 from . import reports as rep
 from . import generator
 from . import parsing
@@ -26,6 +26,8 @@ from .validators import Failure
 from email import message_from_string
 from lxml import etree as ET
 from io import BytesIO as MyIO
+from io import StringIO
+from urllib.parse import urljoin
 
 DIR_LOCK = threading.RLock()
 HEADER_ENCODING ='ISO-8859-1' # Per RFC 2616
@@ -84,6 +86,7 @@ class TestConfig:
     report_type = ""
     reportdest = 'runcov'
     auth = None
+    is_benchmarked = False
 
 
     def __str__(self):
@@ -143,6 +146,9 @@ def parse_file(test_structure, test_files=set(), working_directory=None, vars=No
                 elif key == 'benchmark':
                     benchmark = parse_benchmark(global_url,node[key])
                     benchmarks.append(benchmark)
+                    test_config.is_benchmarked = True
+                    f_name = test_files.split('/')[-1]
+                    test_config.filename = f_name
 
     testset = TestSet()
     testset.tests = tests_out
@@ -557,8 +563,10 @@ def run_testsets(testsets):
     group_failure_counts = dict()
     total_failures = 0
     myinteractive = False
-    
+    benchmark_reports = list()
     requests_handler = requests.Request()
+    result = TestResponse()
+
 
     for testset in testsets:
         mytest = testset.tests
@@ -632,7 +640,10 @@ def run_testsets(testsets):
                 benchmark, myconfig, context=context)
             
             logger.info("Benchmark Done "+ benchmark.name + "Group: "+ benchmark.group)
-
+            tmp = vars(benchmark_result)
+            tmp = rep.BenchmarkReport(tmp)
+            benchmark_report = parse_config(benchmark,tmp)
+            benchmark_reports.append(benchmark_report)
             if benchmark.output_file:  # Write file
                 logger.debug(
                     'Writing benchmark to file in format: ' + benchmark.output_format)
@@ -651,7 +662,12 @@ def run_testsets(testsets):
         if myconfig.report_type.lower() == 'xml':
             report_blackbox_xml(result.report,report_file)
         else:
-            report_blackbox_html(result.report,report_file,result.failure_report)
+            if myconfig.is_benchmarked:
+                tmp = report_file.split('/')[-1]
+                report_file = report_file.replace(tmp,('benchmark_'+tmp))
+                report_benchmark_html(benchmark_reports,report_file)
+            if result.report:
+                report_blackbox_html(result.report,report_file,result.failure_report)
         
     if myinteractive :
         print("===========================")
@@ -714,16 +730,6 @@ def report_blackbox_xml(myreport,filename):
             xml_test.append(xml_response)
             xml_group.append(xml_test)
         xml_testsets.append(xml_group)
-        # for report in val:
-        #     text = ""
-        #     text += "\n\nREQUEST : \n"
-        #     for i in report.reports:
-        #         text += str(i) +"\n"
-        #     text+= "\n\nRESULT : \n"
-        #     for i in report.results:
-        #         text += str(i)+"\n"
-        #     txt += text
-        # out += txt
     out = ET.tostring(xml_testsets,encoding="unicode",pretty_print=True)
     filename = os.path.join(os.getcwd(),filename)
     util.generate_file(filename,out)
@@ -736,6 +742,14 @@ def report_blackbox_html(myreports,f_name,failure=None):
     f_name = f_temp[0]+'.html'
     
     rep.generate_html_test(myreports,f_name,failure)
+
+def report_benchmark_html(benchmark_report,f_name):
+    dest = os.path.dirname(f_name)
+    dest = os.path.join(os.getcwd(),dest)
+    rep.collect_source(dest)
+    f_temp = f_name.split('.')
+    f_name = f_temp[0]+'.html'
+    rep.generate_benchmark_report(benchmark_report,f_name)
 
 class BenchmarkResult:
     """ Stores benchmark results for reports"""
@@ -755,20 +769,34 @@ class BenchmarkResult:
 
 def run_benchmark(benchmark, test_config=TestConfig(), context=None, *args, **kwargs):
 
-    my_context =context
+    my_context = context
     if my_context is None:
         my_context = Context()
-
     warmup_runs = benchmark.warmup_runs
     benchmark_runs = benchmark.benchmark_runs
     message = ''
-
     if benchmark_runs <= 0:
         raise ValueError(
             "Invalid number of benchmark runs, must be > 0: "+ benchmark_runs)
 
     result = TestResponse()
 
+    # Will be implemented later
+    # if benchmark.multi_url:
+    #     url_list = list()
+    #     if benchmark.url_list and benchmark.endpoint_list:
+    #         for url in benchmark.url_list:
+    #             for endpoint in benchmark.endpoint_list:
+    #                 tmp = urljoin(url,endpoint)
+    #                 url_list.append(tmp)
+    #     elif benchmark.url_list and not benchmark.endpoint_list:
+    #         for url in benchmark.url_list:
+    #             tmp = urljoin(url,benchmark.endpoint)
+    #             url_list.append(tmp)
+    #     elif not benchmark.url_list and benchmark.endpoint_list:
+    #         for endpoint in benchmark.endpoint_list:
+    #             tmp = urljoin(benchmark.url,endpoint)
+    #             url_list.append(tmp)
     output = BenchmarkResult()
     output.name = benchmark.name
     output.group = benchmark.group
@@ -777,46 +805,152 @@ def run_benchmark(benchmark, test_config=TestConfig(), context=None, *args, **kw
     metricvalues = [METRICS[name] for name in metricnames]
 
     results = [list() for x in range(0,len(metricnames))]
-    curl = pycurl.Curl()
 
-    logger.info("Warmup: " + message+ ' started')
-    for x in range(0,warmup_runs):
-        benchmark.update_context_before(my_context)
-        templated = benchmark.realize(my_context)
-        curl = templated.configure_curl(
-            timeout=test_config.timeout, context=my_context, curl_handle=curl)
-        curl.setopt(pycurl.WRITEFUNCTION, lambda x:None)
-        curl.perform()
-    logger.info('Warmup: '+ message+ ' finished')
-    logger.info('Benchmark: '+ message + ' starting')
 
-    for x in range(0,benchmark_runs):
-        benchmark.update_context_before(my_context)
-        templated = benchmark.realize(my_context)
-        curl = templated.configure_curl(
-            timeout=test_config.timeout, context=my_context, curl_handle=curl)
-        curl.setopt(pycurl.WRITEFUNCTION, lambda x: None)
+    if benchmark.is_concurrent :
+        concurrency = benchmark.concurrency
+        cycle,remainder = util.calculate_cycle(benchmark_runs,concurrency)
+        warmup_cycle,warmup_remainder = util.calculate_cycle(warmup_runs,concurrency)
+        multicurl_handler = list()
 
-        try:
-            curl.perform()
-            print(curl.getinfo(pycurl.RESPONSE_CODE))
 
-        except Exception:
-            output.failures = output.failures + 1
-            curl.close()
+        temp_multi = pycurl.CurlMulti()
+        temp_multi.handles = []
+        # for x in range(0,warmup_runs):
+        #     curl = pycurl.Curl()
+        #     if len(temp_multi.handles) == concurrency :
+        #         multicurl_handler.append(temp_multi.handles)
+        #         temp_multi = pycurl.CurlMulti()
+        #         temp_multi.handles = []
+        #     benchmark.update_context_before(my_context)
+        #     templated = benchmark.realize(my_context)
+        #     curl = templated.configure_curl(
+        #         timeout=test_config.timeout, context=my_context, curl_handle=curl)
+        #     curl.setopt(pycurl.WRITEFUNCTION, lambda x:None)
+            
+        #     temp_multi.handles.append(curl)
+        #     if x == (warmup_runs-1) and len(multicurl_handler) < warmup_cycle:
+        #         multicurl_handler.append(temp_multi.handles)
+        #     else:
+        #         curl.perform()
+
+        # temp_list = list()
+        # for object_list in multicurl_handler:
+        #     temp_multi = pycurl.CurlMulti()
+        #     temp_multi.handles = []
+        #     for curl_object in object_list:
+        #         temp_multi.handles.append(curl_object)
+        #         temp_multi.add_handle(curl_object)
+        #     temp_list.append(temp_multi)
+        # multicurl_handler = temp_list
+        
+        # for item in multicurl_handler:
+        #     num_handles = len(item.handles)
+        #     while num_handles:
+        #         while 1 :
+        #             ret, num_handles = item.perform()
+        #             if ret != pycurl.E_CALL_MULTI_PERFORM: 
+        #                 break
+        #         item.select(1.0)
+        #     item.handles.clear()
+        #     item.close()
+
+        # logger.info('Warmup: '+ message+ ' finished')
+        # logger.info('Benchmark: '+ message + ' starting')
+
+
+        multicurl_handler = list()
+
+
+        temp_multi = pycurl.CurlMulti()
+        temp_multi.handles = []
+        buffer = list()
+        for x in range(0,benchmark_runs):
+            buffer.append(MyIO())
             curl = pycurl.Curl()
-            continue
+            if len(temp_multi.handles) == concurrency :
+                multicurl_handler.append(temp_multi.handles)
+                temp_multi = pycurl.CurlMulti()
+                temp_multi.handles = []
+            benchmark.update_context_before(my_context)
+            templated = benchmark.realize(my_context)               
+            curl = templated.configure_curl(
+                timeout=test_config.timeout, context=my_context, curl_handle=curl)
+            #curl.setopt(pycurl.WRITEFUNCTION, lambda x:None)
+            curl.setopt(pycurl.WRITEFUNCTION, buffer[x].write)
+            temp_multi.handles.append(curl)
+            if x == (benchmark_runs-1) and len(multicurl_handler) < cycle:
+                multicurl_handler.append(temp_multi.handles)
+            else:
+                curl.perform()
 
-        for i in range(0,len(metricnames)):
-            results[i].append(curl.getinfo(metricvalues[i]))
+        temp_list = list()
+        for object_list in multicurl_handler:
+            temp_multi = pycurl.CurlMulti()
+            temp_multi.handles = []
+            for curl_object in object_list:
+                temp_multi.handles.append(curl_object)
+                temp_multi.add_handle(curl_object)
+            temp_list.append(temp_multi)
+        multicurl_handler = temp_list
+        index = 0
+        for item in multicurl_handler:
+            num_handles = len(item.handles)
+            while num_handles:
+                while 1 :
+                    try:
+                        ret, num_handles = item.perform()
+                    except Exception as e:
+                        output.failures += 1
+                        for curl_handle in item.handles:
+                            curl_handle.close()
+                        item.close()
+                    if ret != pycurl.E_CALL_MULTI_PERFORM: 
+                        break
+                item.select(1.0)
+            count,good,bad = item.info_read()
+            for j in good:
+                for i in range(0,len(metricnames)):
+                    results[i].append(j.getinfo(metricvalues[i]))
+    else:
+        curl = pycurl.Curl()
+        logger.info("Warmup: " + message+ ' started')
+        for x in range(0,warmup_runs):
+            benchmark.update_context_before(my_context)
+            templated = benchmark.realize(my_context)
+            curl = templated.configure_curl(
+                timeout=test_config.timeout, context=my_context, curl_handle=curl)
+            curl.setopt(pycurl.WRITEFUNCTION, lambda x:None)
+            curl.perform()
+        logger.info('Warmup: '+ message+ ' finished')
+        logger.info('Benchmark: '+ message + ' starting')
 
-    logger.info('Benchmark: '+ message+ ' ending')
+        for x in range(0,benchmark_runs):
+            benchmark.update_context_before(my_context)
+            templated = benchmark.realize(my_context)
+            curl = templated.configure_curl(
+                timeout=test_config.timeout, context=my_context, curl_handle=curl)
+            curl.setopt(pycurl.WRITEFUNCTION, lambda x: None)
+
+            try:
+                curl.perform()
+
+            except Exception:
+                output.failures = output.failures + 1
+                curl.close()
+                curl = pycurl.Curl()
+                continue
+
+            for i in range(0,len(metricnames)):
+                results[i].append(curl.getinfo(metricvalues[i]))
+
+        logger.info('Benchmark: '+ message+ ' ending')
 
     temp_results = dict()
     for i in range(0, len(metricnames)):
         temp_results[metricnames[i]] = results[i]
     output.results = temp_results
-    return analyze_benchmark_results(output,benchmark)
+    return analyze_benchmark_results(output,benchmark)  
 
 def analyze_benchmark_results(benchmark_result, benchmark):
     output = BenchmarkResult()
@@ -925,3 +1059,4 @@ def write_benchmark_csv(file_out, benchmark_result, benchmark, test_config=TestC
 
 
 OUTPUT_METHODS = {'csv': write_benchmark_csv  ,'json': write_benchmark_json}
+

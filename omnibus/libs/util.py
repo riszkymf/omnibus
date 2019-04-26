@@ -1,6 +1,7 @@
 import yaml
 import os
 import sys
+import math
 import json
 
 from urllib.parse import urlparse,urljoin
@@ -153,6 +154,12 @@ def check_url(url):
     if url_split.scheme and not url_split.netloc:
         if url_split.scheme not in list(scheme_list.keys()):
             return 'http://'+url
-
     else :
         return url
+
+
+def calculate_cycle(total_run,concurrency):
+    cycle = math.ceil(total_run/concurrency)
+    remainder = total_run % concurrency
+    
+    return cycle,remainder
