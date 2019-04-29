@@ -20,9 +20,7 @@ div#sumTable_length{
 div#sumTable_info{
     visibility: hidden;
 }
-ul.pagination{
-    visibility: hidden;
-}
+
 
 .hidden{
     visibility: hidden;

@@ -19,6 +19,7 @@ class Report(object):
             self.reports = list()
             self.passed = False
 
+
     def __str__(self):
         return json.dumps(self, default=safe_to_json)
 
@@ -54,50 +55,24 @@ def get_xml(item):
                 result.append(el)
         return result
 
+def generate_summary(myreport):
+    keys = {"test_name","group","method","url","status"}
+    table_data = dict()
+    table_data.fromkeys(keys,[])
+    for key in keys:
+        table_data[key] = list()
+        for report in myreport:
+            temp = {**report.raw_details, **report.identity}
+            attr = {"klass" : {"table-danger" : report.is_failed , "clickable-row" : True}, "data-url" : "#{}".format(report.identity['test_name'])}
+            value = temp.get(key)
+            tmp = {"value" : value , "attribute" : attr}
+            table_data[key].append(tmp)
+    table_out = DataTable(table_data)
+    table_out=table_out.construct_table_object()
+    div_out = construct_html_dict('div',table_out,{'klass': {'col-md-10' : True, 'offset-1':True}})
+    div_out = HTMLObject(div_out)
+    return div_out
 
-def generate_report_config(report):
-
-    def config_report(reportdata):
-        content = "<tbody>"
-        trow = ''
-        for data in reportdata:
-            data_rep = dict()
-            for key,val in data.reports:
-                data_rep[key] = val
-            if data.passed[0]:
-                tclass = ""
-            else:
-                tclass = "table-danger"
-            trow += '<tr class = "{} clickable-row" data-url="#{}">'.format(tclass,data_rep['test_name'][0])
-            td = "<td>{}</td>".format(data_rep['test_name'][0])
-            td += "<td>{}</td>".format(data_rep['group'][0])
-            td += "<td>{}</td>".format(data_rep['method'][0])
-            td += "<td>{}</td>".format(data_rep['url'][0])
-            if data.passed[0]:
-                passed = "<b style='color:#016613;'>Passed</b>"
-            else:
-                passed = "<b style='color:#8c0c01;'>Failed</b>"
-            td += "<td>{}</td>".format(passed)
-            trow += td+"</a></tr>"
-        content += trow + "</tbody>"
-        return content
-    text = config_report(report)
-
-    myconfigreport = """
-    <div class="col-md-10 offset-md-1">
-    <table id="sumTable" class="table table-sm table-list-search">
-        <thead>
-            <tr>
-                <th>Test Name</th>
-                <th>Test Group</th>
-                <th>Method</th>
-                <th>Endpoint</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        {}
-    </table></div>""".format(text)
-    return myconfigreport
 
 
 def group_assign(myreport):
@@ -123,12 +98,8 @@ def reports_to_dict(myreport):
 
     return repdict
 
-def is_passed(myreport):
-    return myreport.passed[0]
-
 def generate_reports_content(myreport):
     myreport = reports_to_dict(myreport)
-
     def conf_list_report(reports):
         listed_conf = ''
         conf_l = ["group","url","method","expected_status"]
@@ -262,8 +233,20 @@ def collect_details(data_dict):
 
 
 def generate_html_test(reports,f_name,failure=None):
-
-    print(vars(reports[0]))
+    
+    myreport = list()
+    rep_success = 0
+    for report in reports:
+        tmp = {"results" : report.results, "reports" : report.reports , "passed" : report.passed}
+        x = DataReport(tmp)
+        myreport.append(x)
+        if report.passed[0]:
+            rep_success += 1
+    
+    percentage = (rep_success/len(reports))*100
+    percentage = round(percentage,2)
+  
+    grouping(myreport)
     reportgroup = dict()
     reports = cleanup(reports,f_name)
     failure = cleanup(failure,f_name)
@@ -271,47 +254,26 @@ def generate_html_test(reports,f_name,failure=None):
         globals()['failure_report'].append((f_name,failure))
     reportgroup = group_assign(reports)
     htmltest = ''
-    summary = generate_report_config(reports)
+    summary=[generate_summary(myreport)]
+    html_report = grouping(myreport)
     generate_index(reports,f_name)
 
-    for group,report in reportgroup.items():
-        htmlgroup = '<div class="col-md-10 offset-md-1">'
-        tmp = '<h4 style="padding-top: 15px; padding-bottom: 15px">Group : {}</h4><hr><div class="row">'.format(group)
-        conf = ''
-        for i in report:
-            title = generate_title(i)
-            conf_tmp = generate_reports_content(i)
-            details = generate_request_details(i)
-            details_html = collect_details(details)
-            conf+= title+conf_tmp + details_html +"</span></div>"
-        htmltest += htmlgroup + tmp + conf + "</div></div>"
-    
     f_nav = f_name.split('/')[-1]
-    success = 0
-    for i in reports:
-        if i.passed[0]:
-            success += 1
-    percent = (success/len(reports))*100
-    f_nav = f_nav + ": {}%".format(round(percent))
+    f_nav = f_nav + ": {}%".format(percentage)
     nav = HTMLElements(f_nav)
     nav = nav.nav()
-    
-    txttst = """
-<html>
-    <head>
-    <link rel="stylesheet" href="bootstrap.css">
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="datatables.css">
-    </head>
-    <body>{}
-    <div class="container"  style="padding-top:50px;">
-    <div class="row">
-    {}{}
-    </div></div></body>
-    <script src="jquery-3.3.1.js"></script>
-    <script src="main.js"></script>
-    <script src="datatables.js"></script>
-</html>""".format(nav,summary,htmltest)
+
+    stylesheet,script = generate_source()
+    head = construct_html_object("head",stylesheet)
+    row_content = summary + html_report
+    row = construct_html_object("div",row_content,{"klass" : {"row" : True}})
+    container = construct_html_object("div",row,{"klass" : {"container" : True}, "style" : "padding-top : 50px;"})
+
+    body_content = [nav,container]
+    body = construct_html_object("body",body_content)
+    html_content = [head,body]+script
+    html = construct_html_object("html",html_content)
+    txttst = html.build()
     f_name = os.path.join(os.getcwd(),f_name)
     generate_file(f_name,txttst)
 
@@ -437,6 +399,28 @@ def generate_index(reports,f_name):
     generate_file(index,txttst)
 
 
+def grouping(myreports):
+
+    grouped_report = dict()
+    for report in myreports:
+        group_name = report.identity['group']
+        if group_name not in grouped_report:
+            grouped_report[group_name] = list()
+        grouped_report[group_name].append(report.construct())
+    
+    style = "padding-top: 15px; padding-bottom: 15px"
+    obj_group = list()
+    for group,reports in grouped_report.items():
+        tmp = "Group : {}".format(case_conversion(group))
+        group_title = construct_html_dict('h4', tmp, {"style":style})
+        group_title = HTMLObject(group_title)
+        l_break = HTMLObject(construct_html_dict('hr',''))
+        row = HTMLObject(construct_html_dict('div',reports,{'klass' : {'row' : True}}))
+        group_section = construct_html_dict('div',[group_title,l_break,row],{'klass' : {'col-md-10' : True,  'offset-md-1' : True}})
+        x = HTMLObject(group_section)
+        obj_group.append(x)        
+    
+    return obj_group
 
 class HTMLElements():
 
@@ -457,23 +441,27 @@ class HTMLElements():
             self.head_title = page
 
     def nav(self):
-        search_bar = """<form>
-  <button id="filterSuc" class="button btn-success btn-small buttons-right">Hide Success</button>
-  <button id="filterFail" class="button btn-danger btn-small buttons-right">Hide Fail</button>
-    </form>
-"""
-        indexlink = '<a href="index.html" class="navbar-brand right" style="color:black;">Back to Index</a>'
+        attr = {"href" : "index.html" , "style" : "color:black", "klass" : {"navbar-brand" : True, "right" : True}}
+        indexlink = construct_html_dict('a',"Back to Index",attr=attr)
+        indexlink = HTMLObject(indexlink)
+
+        buttonSuc = construct_html_dict("button","Hide Succes",{"id" : "filterSuc", "klass": {"button" : True, "btn-success" : True, "btn-small": True, "buttons-right":True}})
+        buttonFail = construct_html_dict("button","Hide Fail",{"id" : "filterFail", "klass": {"button" : True, "btn-danger" : True, "btn-small": True, "buttons-right":True}})
+        search_bar = construct_html_dict("form",[HTMLObject(buttonSuc),HTMLObject(buttonFail)])
+        search_bar = HTMLObject(search_bar)
+
+        
+        title = construct_html_dict("a",self.head_title,{"klass" : {"navbar-brand" : True}})
+        title = HTMLObject(title)
 
         if self.is_index:
-            attach = search_bar
+            attach = [title,search_bar]
         else:
-            attach = indexlink + search_bar
-        navhtml = """
-<nav class="navbar navbar-dark bg-light justify-content-between">
-  <a class="navbar-brand" >{}</a>
-  {}
-</nav>""".format(self.head_title,attach)
-        return navhtml
+            attach = [title,indexlink,search_bar]
+
+        navhtml = construct_html_dict("nav",attach,{"klass" : {"navbar" : True, "navbar-dark" : True, "bg-light" : True, "justify-content-between":True}})
+
+        return HTMLObject(navhtml)
 
 
 def generate_benchmark_title(benchmark_report):
@@ -683,6 +671,7 @@ class HTMLObject(object):
     _label = ""
 
     def __init__(self,obj,**kwargs):
+        self.attribute = dict()
         for key,value in obj.items():
             self.__setattr__(key,value)
         if kwargs:
@@ -709,9 +698,12 @@ class HTMLObject(object):
         elif isinstance(self.content,list):
             content_tmp = ""
             for item in self.content:
-                if not isinstance(item,HTMLObject):
-                    raise TypeError("HTMLObject.content must be a string, an HTMLObject or a list of HTMLObject : {} : {}".format(item,type(item)))
-                content_tmp += item.build()
+                if isinstance(item,HTMLObject):
+                    content_tmp += item.build()
+                elif not item:
+                    continue
+                else:
+                    content_tmp += str(item)
             self.content = content_tmp
             return self.build()
         else:
@@ -720,7 +712,6 @@ class HTMLObject(object):
             with tag(self.tag,**attr):
                 doc.asis(self.content)
             return doc.getvalue()
-
 
 
 class DataTable(object):
@@ -742,6 +733,11 @@ class DataTable(object):
     }
 
     def __init__(self,raw_data):
+        self.raw_datasets = dict()
+        self.raw_data = dict()
+        self.raw_head = list()
+        self.html_attr = dict()
+        self.head = list()
         try:
             self.raw_datasets = copy(raw_data)
             self.raw_head = list(raw_data.keys())
@@ -775,14 +771,6 @@ class DataTable(object):
             data.append(tmp)
         return data
 
-    def construct_hmtl_dict(self,tag,content,attr={}):
-        result = {
-            "tag" : tag,
-            "attribute" : attr,
-            "content" : content
-        }
-        return result
-
     def combine_attr(self,attr):
         tmp = dict()
         klass = attr.get('klass',{})
@@ -799,25 +787,161 @@ class DataTable(object):
         head_title = self.head
 
 
-        tmp = [self.construct_hmtl_dict('td',x) for x in head_title]
+        tmp = [construct_html_dict('th',x) for x in head_title]
         o_head = [HTMLObject(item) for item in tmp]
-        o_head_row = HTMLObject(self.construct_hmtl_dict('tr',o_head))
-        o_thead = HTMLObject(self.construct_hmtl_dict('thead',o_head_row))
+        o_head_row = HTMLObject(construct_html_dict('tr',o_head))
+        o_thead = HTMLObject(construct_html_dict('thead',o_head_row))
         
         o_tr_data = []
         for data,_attr in zip(cell_data,attr):
-            tmp = [HTMLObject(self.construct_hmtl_dict('td',x)) for x in data]
-            o_tr_data.append(HTMLObject(self.construct_hmtl_dict('tr',tmp,_attr)))
-        o_tbody = HTMLObject(self.construct_hmtl_dict('tbody',o_tr_data))
+            tmp = [HTMLObject(construct_html_dict('td',x)) for x in data]
+            o_tr_data.append(HTMLObject(construct_html_dict('tr',tmp,_attr)))
+        o_tbody = HTMLObject(construct_html_dict('tbody',o_tr_data))
 
         tmp = [o_thead,o_tbody]
-        o_table = HTMLObject(self.construct_hmtl_dict('table',tmp,self.DEFAULT_ATTRIBUTE['table']))
+        o_table = HTMLObject(construct_html_dict('table',tmp,self.DEFAULT_ATTRIBUTE['table']))
         
         return o_table
 
+class DataReport(object):
+
+    is_failed = False
+
+    
+    reportObject = None    
 
 
+    def __init__(self,data,**kwargs):
+        self.raw_details = dict()
+        self.raw_request = dict()
+        self.raw_response = dict()
+        self.identity = dict()
+        self.parse_reports(data)
 
+    def parse_reports(self,data):
+        result = tuples_to_dict(data['results'])
+        report = tuples_to_dict(data['reports'])
+        self.is_failed = not(data.pop('passed')[0])
+
+        self.identity['test_sets'] = report.pop("testsets")[0]
+        self.identity['test_name'] = report.pop("test_name")[0]
+        self.identity['group'] = report.pop("group")[0]
+        if self.is_failed:
+            self.identity['status'] = 'Failed'
+        else:
+            self.identity['status'] = 'Passed'
+
+        if self.is_failed:
+            failure = result.pop('failures')
+            failure = failure[0]
+            txt = "Type : {} , Message : {}".format(failure.failure_type,failure.message)
+            self.raw_details['failures'] = [txt]
+
+        self.raw_details['method'] = report.pop('method')
+        self.raw_details['url'] = report.pop('url')
+        self.raw_details['expected_status'] = report.pop('expected_status')
+
+        self.raw_request = copy(report)
+
+        self.raw_response = copy(result)
+
+        self.raw_request['validators'] = report.get('validators',{})
+        try:
+            report.pop('validators')
+        except:
+            pass
+
+    def generate_list(self,d_list):
+        list_item = list()
+        for key,value in d_list.items():
+            content = ""
+            if isinstance(value,list):
+                for val in value:
+                    content+=str(val) + ", "
+                content = content.rstrip(", ")
+            else:
+                content = value
+            bullet = construct_html_dict('b',"{} :  ".format(case_conversion(key)))
+            o_list = construct_html_dict('li',[HTMLObject(bullet),content])
+            o_list = HTMLObject(o_list)
+            list_item.append(o_list)
+        result = construct_html_dict('ul',list_item)
+        return HTMLObject(result)
+
+
+    def generate_code(self,data):
+        
+        data = convert_new_line_to_br(data)
+        obj = construct_html_dict('code',data)
+        obj = HTMLObject(obj)
+
+        o_pre = construct_html_dict('pre',obj)
+        o_pre = HTMLObject(o_pre)
+        return o_pre
+
+    def construct(self):
+        
+        card_title = self.identity.get('test_name','Untitled')
+        card_badge = generate_badge(not(self.is_failed))
+        card_title = construct_html_dict('h5',[(card_title+"    "),card_badge],{'klass' : {'card-title':True}})
+        card_title = HTMLObject(card_title)
+
+        card_details = self.generate_list(self.raw_details)
+        card_request = None
+        request_title = None
+        if self.raw_request:
+            card_request = list()
+            request_title = construct_html_dict('h5','Request',{'klass' : {'card-title' : True}})
+            request_title = HTMLObject(request_title)
+            for key,value in self.raw_request.items():
+                if isinstance(value,list):
+                    value = value[0]
+                if isinstance(value,dict):
+                    value = json.dumps(value)
+                elif not value:
+                    continue   
+                value = convert_new_line_to_br(value)
+                o_code = self.generate_code(value)
+                key_title = case_conversion(key)
+                key_title = construct_html_dict('b',case_conversion(key_title))
+                key_title = HTMLObject(key_title)
+                o_li = construct_html_dict('li',[key_title,o_code])
+                card_request.append(HTMLObject(o_li))
+            card_request = construct_html_dict('ul',card_request)
+            card_request = HTMLObject(card_request)
+
+        card_response = list()
+        response_title = construct_html_dict('h5','Response',{'klass' : {'card-title' : True}})
+        response_title = HTMLObject(response_title)
+        pp = pprint.PrettyPrinter(indent=4)
+        for key,value in self.raw_response.items():
+            tmp = key
+            key = construct_html_dict('b',"{} :".format(case_conversion(key)))
+            key = HTMLObject(key)
+            if tmp.lower() == 'response_headers':
+                value = pp.pformat(value)
+            if isinstance(value,list):
+                value = value[0]
+            elif isinstance(value,dict):
+                value = json.dumps(value)
+            elif not value:
+                continue
+            value = self.generate_code(value)
+            li = construct_html_dict('li',[key,value])
+            li = HTMLObject(li)
+            card_response.append(li)
+        card_response = construct_html_dict('ul',card_response)
+        card_response = HTMLObject(card_response)
+
+        content_span = [card_title,card_details,request_title,card_request,response_title,card_response]
+
+        o_span = construct_html_dict('span',content_span,{'klass':{'card-body':True}})
+        o_span = HTMLObject(o_span)
+
+        klass = {"id" : self.identity['test_name'], "klass" : {"card" : True,"success" : not(self.is_failed) ,"bg-danger":self.is_failed, "failed" : self.is_failed, "col-12":True}}
+
+        o_div = construct_html_dict('div',o_span,klass)
+        return HTMLObject(o_div)
 
 class DataChart(BenchmarkData):
 
@@ -848,15 +972,14 @@ class DataChart(BenchmarkData):
     def construct_script(self):
         conf = copy(self.plot_configuration)
         mychart = self.chart_name
-        doc,tag,text = Doc().tagtext()
-        with tag('script'):
-            script ="var ctx = document.getElementById('{}').getContext('2d');var {} = new Chart(ctx,{})".format(mychart,mychart,conf)
-            text(script)
-        return doc
+        content = "var ctx = document.getElementById('{}').getContext('2d');var {} = new Chart(ctx,{})".format(mychart,mychart,conf)
+        script = construct_html_dict("script",content)
+        script = HTMLObject(script)
+        return script
 
     def get_script(self):
         script = self.construct_script()
-        return script.getvalue()
+        return script.build()
 
     def construct_configuration(self,**kwargs):
         chart_type = self.chart_type
@@ -897,7 +1020,16 @@ class DataChart(BenchmarkData):
 
 
     def plot_graph(self):
-        pass
+        attr = copy(self.canvas_elements)
+        default = construct_html_dict("p","Your browser does not support the canvas element.")
+        default = HTMLObject(default)
+
+        canvas = construct_html_dict("canvas",default,attr=attr)
+        canvas = HTMLObject(canvas)
+
+
+        return canvas
+
 
     
     def get_html(self):
@@ -980,3 +1112,71 @@ class DataChart(BenchmarkData):
             raise ValueError(msg)
         else:
             return chartdata
+
+
+def construct_html_dict(tag,content,attr={}):
+    result = {
+        "tag" : tag,
+        "attribute" : attr,
+        "content" : content
+    }
+    return result
+
+def construct_html_object(tag,content,attr={}):
+    return HTMLObject(construct_html_dict(tag,content,attr))
+
+
+def generate_badge(value):
+    txt = "Failed"
+    attr = dict()
+    klass = {"badge" : True, "badge-success": False, "badge-danger":True}
+    if value:
+        txt = "Passed"
+        klass['badge-success'] = True
+        klass['badge-danger'] = False
+    attr['klass'] = klass
+    attr['style'] = "margin-left : 15px;"
+    html_dict = {"tag" : "span", "content": txt, "attribute":attr}
+    return HTMLObject(html_dict)
+
+def check_list_of_tuples(data):
+    for i in data:
+        if not isinstance(i,tuple) or not len(i) is 2:
+            raise TypeError("Value must be list of tuples of 2 elements : {}".format(i))
+    return True 
+
+
+
+def tuples_to_dict(tuples):
+    result = dict()
+    for key,value in tuples:
+        if isinstance(value,list) and isinstance(value[0],tuple) and check_list_of_tuples(value):
+            value = tuples_to_dict(value)
+        result[key] = value
+    return result
+
+
+
+def generate_source():
+
+    dirname = os.path.dirname(__file__)
+    static = "../static"
+    static = get_path(dirname,static)
+    files = os.listdir(static)
+
+    stylesheet = list()
+    script = list()
+
+
+    for item in files:
+        f_type = item.split('.')[-1]
+        if f_type == 'css':
+            tmp = construct_html_dict('link',"",{"rel" : "stylesheet", "href" : item})
+            tmp = HTMLObject(tmp)
+            stylesheet.append(tmp)
+        else:
+            tmp = construct_html_dict('script',"",{"src" : item})
+            tmp = HTMLObject(tmp)
+            script.append(tmp)
+    
+    return stylesheet,script
