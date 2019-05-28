@@ -10,18 +10,12 @@
   - auth: { bearer : {"token" : "test_bearer" }}
 
 
-- test:
-  - name: "Login"
-  - method: "POST"
-  - body: '{"username" : "test@biznetgio.com", "password": "BiznetGio2017"}'
-  - endpoint: "api/login"
-  - extract_binds:
-      - token: {jmespath: 'data.token'}
 - test: 
   - name: "TestInputTTL"
   - method: "POST"
-  - headers: {template: {'Content-Type': 'application/json', 'Access-Token' : "$token"}}
+  - headers: {template: {'Content-Type': 'application/json'}}
   - body: {template: '{"insert":{"fields":{"nm_ttl": $mock_ttl}}}'}
+  - expected_status : [500]
   - extract_binds: 
       - 'id_ttl' : {'jmespath' : 'message.id'}
   - validators:
@@ -29,7 +23,7 @@
 - test: 
   - name: "TestInputTTLFails"
   - method: "POST"
-  - headers: {template: {'Content-Type': 'application/json', 'Access-Token' : "$token"}}
+  - headers: {template: {'Content-Type': 'application/json'}}
   - url: {template: $urlt}
   - body: {template: '{"insert":{"fields":{"nm_ttl": "$mock_ttl"}}}'}
   - extract_binds: 

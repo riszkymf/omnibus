@@ -514,9 +514,7 @@ class Test(object):
                 else:
                     assert isinstance(configvalue, str) or isinstance(
                         configvalue, int)
-                    mytest.url = urljoin(
-                        url_val, coerce_to_string(configvalue))
-
+                    mytest.url = url_val+coerce_to_string(configvalue)
             if configelement == 'url':
                 if isinstance(configvalue, dict):
                     val = parsing.lowercase_keys(configvalue)['data']

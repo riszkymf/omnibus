@@ -28,7 +28,7 @@ def flatten_dictionaries(input):
     except Exception as e:
         return generate_respons(False, None, str(e))
     else:
-        return generate_respons(True, output)
+        return generate_respons(output)
 
 
 def lowercase_keys(input_dict):

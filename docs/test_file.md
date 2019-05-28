@@ -70,3 +70,5 @@ Test Group Group_2 , on test_generator.yml, SUCCEEDED: 3/3 Tests Passed!
 ----------------------------
 
 For further information on generators, binders, validators and others, see [documentation](features.md)
+
+- [Back to Readme](../README.md)

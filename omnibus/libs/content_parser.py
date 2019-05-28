@@ -186,7 +186,6 @@ def parse_configuration(node, base_config=None):
         test_config = TestConfig()
 
     node = parsing.lowercase_keys(parsing.flatten_dictionaries(node)['data'])['data']
-
     for key,value in node.items():
         if key == 'url':
             test_config.url = str(value)
@@ -366,8 +365,6 @@ def run_test(mytest,test_config=TestConfig(), context=None, request_handler=None
                 testreports.results.append(("response_headers",respons.headers))
                 testreports.results.append(("response_code",[result.response_code]))
                 testreports.passed = [result.passed]
-                if not result.passed:
-                    testreports.results.append(("Failure message: ",[result.failures]))
                 if result.body:
                     testreports.results.append(("body",[result.body]))
                 result.report.append(testreports)
@@ -666,7 +663,7 @@ def run_testsets(testsets):
                 tmp = report_file.split('/')[-1]
                 report_file = report_file.replace(tmp,('benchmark_'+tmp))
                 report_benchmark_html(benchmark_reports,report_file)
-            if result.report:
+            elif result.report:
                 report_blackbox_html(result.report,report_file,result.failure_report)
         
     if myinteractive :

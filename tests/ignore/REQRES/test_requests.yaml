@@ -1,0 +1,38 @@
+- config:
+  - desc: Testing Omnibus on reqres.in using Request
+  - testset: "REQRES TEST"
+  - group: "reqres"
+  - url: "https://reqres.in/api"
+
+  
+
+- test:
+  - name: List Users
+  - method: GET
+  - group: GET
+  - endpoint: '/users'
+  - expected_status: [200]
+  - extract_binds:
+    - id_user: {'jmespath' : 'data[0].id'}
+    - nm_user: {'jmespath' : 'data[0].first_name'}
+  - validators:
+    - compare: {jmespath: 'data[0].first_name', comparator: 'eq', expected: "George"}
+
+- test:
+  - name: Single User Failed
+  - method: GET
+  - group: GET
+  - endpoint: '/users/23'
+  - expected_status: [404]
+
+
+- test:
+  - name: CreateUsers
+  - method: POST
+  - group: POST
+  - endpoint: /users
+  - body: '{"name": "morpheus","job": "leader"}'
+  - expected_status: [200,201]
+  - validators:
+    - compare: {jmespath: name, comparator: 'eq', expected: "morpheus"}
+  

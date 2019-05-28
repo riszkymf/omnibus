@@ -28,8 +28,12 @@ omnibus <command> [options]
 * [Postman](docs/postman.md) :
     Details on using Postman JSON file on omnibus
 
+* [Benchmark](docs/benchmark.md):
+    Writing Benchmark test
+
 * [Test File](docs/test_file.md):
-Creating your first test file
+    Creating your first test file
 
 * [Examples](docs/example):
-Example Files
+    Example Files
+

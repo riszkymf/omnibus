@@ -14,7 +14,6 @@ def parse_generator_doubling(config):
     if 'start' in config:
         start = int(config['start'])
 
-    # We cannot simply use start as the variable, because of scoping limitations
     def generator():
         val = start
         while(True):
@@ -34,3 +33,4 @@ GENERATORS = {'doubling': parse_generator_doubling}
 For extensions to work, it need function to be called and it need to be executed during invocation.
 For full example on extension, see [example files](example/test_extensions.py)
 
+- [Back to Readme](../README.md)

@@ -106,3 +106,5 @@ omnibus cov [FILE] [options]
 
 - #### [--rep-file]:
     Write summary report to a text file.
+
+- [Back to Readme](../README.md)

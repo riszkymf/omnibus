@@ -359,3 +359,5 @@ Example:
 ```yaml
 - authorization: { bearer: {'token' : 'Bearer yourtoken' } }
 ```
+
+- [Back to Readme](../README.md)

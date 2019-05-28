@@ -42,4 +42,7 @@ class TestCLIS():
         args = argsall.split(' ')
         result = subprocess.check_call(args)
 
-    
+    def test_report(self):
+        argsall = 'omnibus run ../tests --ignore ../tests/ignore -r --report html'
+        args = argsall.split(' ')
+        result = subprocess.check_call(args)

@@ -16,36 +16,9 @@
   - method: 'GET'
   - generator_binds: { nm_zone: dnslist}
   - headers: {template: {'Content-Type': 'application/json'}}
-  - benchmark_runs: '200'
-  - concurrency : 10
-  - extract_binds:
-      - id_ttl: {jmespath: 'message.id'}
-  - metrics:
-    - total_time
-    - total_time: mean
-    - total_time: median
-    - total_time: std_deviation
-    - size_download
-    - speed_download
-    - speed_download: mean_harmonic
-    - namelookup_time
-    - connect_time
-    - pretransfer_time
-    - starttransfer_time
-    - redirect_time
-    - request_size
-    - num_connects
-
-
-- benchmark: # create entity
-  - name: "Test Post2"
-  - endpoint: "api/ttl"
-  - method: 'GET'
-  - generator_binds: { nm_zone: dnslist}
-  - headers: {template: {'Content-Type': 'application/json'}}
   - warmup_runs: 0
-  - benchmark_runs: '100'
-  - concurrency : 2
+  - benchmark_runs: '7'
+  - concurrency : 3
   - output_format: json
   - output_file: 'test_benchmark.json'
   - extract_binds:
@@ -57,3 +30,22 @@
     - size_download
     - speed_download
 
+- benchmark: # create entity
+  - name: "Test Post"
+  - endpoint: "api/type"
+  - method: 'GET'
+  - generator_binds: { nm_zone: dnslist}
+  - headers: {template: {'Content-Type': 'application/json'}}
+  - warmup_runs: 0
+  - benchmark_runs: '7'
+  - concurrency : 3
+  - output_format: json
+  - output_file: 'test_benchmark.json'
+  - extract_binds:
+      - id_ttl: {jmespath: 'message.id'}
+  - metrics:
+    - total_time
+    - total_time: mean
+    - total_time: median
+    - size_download
+    - speed_download

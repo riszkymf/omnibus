@@ -208,12 +208,11 @@ def parse_benchmark(base_url, node, test_config=None):
                 else:
                     benchmark.url_list.append(url)
             benchmark.multi_url = True
-        elif key == 'endpoint_list':
+        elif key == 'endpoint_list':     # pragma: no cover
             benchmark.endpoint_list = parse_list(value)
             benchmark.multi_url = True
         elif key == u'metrics':
             if isinstance(value, basestring):
-                # Single value
                 benchmark.add_metric(tests.coerce_to_string(value))
             # FIXME refactor the parsing of metrics here, lots of duplicated logic
             elif isinstance(value, list) or isinstance(value, set):
@@ -250,7 +249,7 @@ def parse_benchmark(base_url, node, test_config=None):
 
     return benchmark
 
-def parse_list(value):
+def parse_list(value):  # pragma: no cover
     if isinstance(value,list):
         result = value
     elif isinstance(value,str):

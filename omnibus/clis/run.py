@@ -42,6 +42,7 @@ class Run(Base):
     f_ignore = list()
     is_reported = False
     is_postman = False
+    is_benchmark = False
 
     def execute(self):
         files = list()

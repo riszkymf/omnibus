@@ -5,10 +5,11 @@ from lxml import etree
 from copy import copy
 from omnibus.libs.util import *
 from omnibus.libs.parsing import safe_to_json
-from yattag import Doc
+from yattag import Doc,indent
 
 test_files = list()
 failure_report = list()
+benchmark_files = list()
 
 class Report(object):
 
@@ -68,7 +69,7 @@ def generate_summary(myreport):
             tmp = {"value" : value , "attribute" : attr}
             table_data[key].append(tmp)
     table_out = DataTable(table_data)
-    table_out=table_out.construct_table_object()
+    table_out=table_out.construct()
     div_out = construct_html_dict('div',table_out,{'klass': {'col-md-10' : True, 'offset-1':True}})
     div_out = HTMLObject(div_out)
     return div_out
@@ -233,7 +234,8 @@ def collect_details(data_dict):
 
 
 def generate_html_test(reports,f_name,failure=None):
-    
+    reports = cleanup(reports,f_name)
+    failure = cleanup(failure,f_name)
     myreport = list()
     rep_success = 0
     for report in reports:
@@ -350,6 +352,19 @@ def generate_index(reports,f_name):
             trow += '{}</tr>'.format(td)
         total_result = "{}/{}".format(total_success,(total_fail+total_success))
         percent = total_success*100/(total_fail+total_success)
+        benchmark_table = ''
+        if globals()['benchmark_files']:
+            files = globals()['benchmark_files']
+            table_data = list()
+            for item in files:
+                path = get_path(os.getcwd(),item)
+                a = construct_html_object('a',path,{'href' : path})
+                row = {'value' : a }
+                table_data.append(row)
+            benchmark_report = {'benchmark_results' : table_data}
+            bench = DataTable(benchmark_report,{"klass" : {"table" : True, "table-sm" : True, "table-bordered" : True, "table-list-search" : True},'id':'benchmark_result'})
+            bench = bench.construct()
+            benchmark_table = bench.build()
         table = """
         <div class="container" style="padding-top:50px;">
         <div class="row">
@@ -370,7 +385,7 @@ def generate_index(reports,f_name):
             <b>Total Result</b></td>
             <td>{}</td>
             <td>{}%</td></tr></tfoot>
-        </table></div>""".format(trow,total_result,round(percent))
+        </table>{}</div>""".format(trow,total_result,round(percent),benchmark_table)
         return table,percent
     table_content,percent=get_details(summary)
     elements = HTMLElements('index {}'.format(round(percent)))
@@ -464,28 +479,34 @@ class HTMLElements():
         return HTMLObject(navhtml)
 
 
-def generate_benchmark_title(benchmark_report):
-    
-    bench_name = benchmark_report.config['name']
-    
-    card_head = """
-    <div class="card col-12" id="{}">
-    <span class="card-body">
-    <h5 class="card-title" >{} 
-    </h5>
-    """.format(bench_name,bench_name)
-
-    return card_head
-
 def construct_benchmark_card(benchmark_report):
 
-    html_text = ""
+    content = list()
+    plot_script = list()
+    table_script = list()
     for report in benchmark_report:
-        title = generate_benchmark_title(report)
+        failure = report.config['failures']
+        failed = True if failure > 0 else False
+        data = tuples_to_dict(report.result_item)
+        bench = BenchmarkData()
+        bench.write_data(data)
+        plot = list()
+        benchmark_name = report.config['name']
+        for key,value in bench.raw_data.items():
+            tmp = DataChart({key:value},chart_type='line',labels=key)
+            tmp.chart_name = (benchmark_name + "_" + key).replace(" ","_")
+            plot.append(tmp.plot_graph())
+            plot_script.append(tmp.construct_script())
+        title = construct_html_object('h5',benchmark_name,{"klass" : {"card-title" : True, }})
         config = benchmark_result_details(report)
-        data_table = benchmark_result_table(report)
-        html_text += "{}{}{}</span></div>".format(title,config,data_table)
-    return html_text
+        table,script = benchmark_result_table(report)
+        table_script.append(script)
+        card_content = [title,config,table] + plot
+        span = construct_html_object('span',card_content,{'klass':{'card-body' : True}})
+        div = construct_html_object('div',span,{'id' : benchmark_name,"klass" : { "card" : True, "col-12" : True, 'failed' : failed,  'bg-danger' : failed}})
+        content.append(div)
+    plot_script = plot_script + table_script
+    return content,plot_script
 
 def failure_summary(fail_report):
     html_out = ''
@@ -504,7 +525,7 @@ def failure_summary(fail_report):
     return html_out
 
 def benchmark_result_details(benchmark_report):
-    html_out = ""
+    html_out = "<br>"
     config = {**benchmark_report.config, **benchmark_report.processed_report}    
     for key,value in config.items():
         tmp = ""
@@ -522,7 +543,7 @@ def benchmark_result_details(benchmark_report):
                 for subkey,subval in value:
                     tmp += "  {}  :  {}<br/>".format(case_conversion(subkey),str(subval))
         html_out+=tmp
-    html_out = "<pre><code>{}</code></pre>".format(html_out)
+    html_out = generate_code(html_out)
     return html_out
 
 
@@ -535,30 +556,27 @@ def benchmark_result_table(benchmark_report):
 
     list_data = list()
     header = list()
-    for item in range(0,len(result)):
-        header.append(result[item][0])
-        list_data+=result[item][1]    
-    index = len(result[0][1])    
-    data = list()
-    for item in range(0,index):
-        tmp = list()
-        for x in range(0,len(result)):
-            idx = item + (index*x)
-            tmp.append(list_data[idx])
-        tmp = tuple(tmp)
-        data.append(tmp)
-    for key,value in result:
-        table_head += "<th>{}</th>".format(case_conversion(key))
-    for row in data:
-        tmp = ""
-        for item in row:
-            tmp += "<td>{}</td>".format(str(item))
-        table_data += "<tr>{}</tr>".format(tmp)
-   
-    table_head = "<thead>{}</thead>".format(table_head)
-    table_data = "<tbody>{}</tbody>".format(table_data)
-    html_out = '<table class="table">{}{}</table>'.format(table_head,table_data)
-    return html_out
+    data_table = dict()
+    resulttest = result
+
+    for key,value in resulttest:
+
+        if key not in data_table:
+            data_table[key] = list()
+        
+        for item,index in zip(value,range(0,len(value))):
+            table_dict = {
+                "value" : str(item),
+                "attribute" : {"id": "request_{}".format(index)}
+            }
+        
+            data_table[key].append(table_dict)
+    table_id = benchmark_report.config['name'].replace(' ','_')
+    o_table = DataTable(data_table,{"klass" : {"table" : True, "table-sm" : True, "table-bordered" : True, "table-list-search" : True},"id" : table_id})
+    table = o_table.construct()
+    scripts = o_table.construct_script()
+
+    return table.build(),scripts
 
 
 class BenchmarkReport(object):
@@ -566,9 +584,10 @@ class BenchmarkReport(object):
     results_item = list()   
     processed_report = dict()
     config = dict()
-
+    failures = None
     def __init__(self,result=None):
         self.benchmark_results = result
+        self.Failures = result['failures']
         try:
             result_list = result['results']
             self.result_item = list(result_list.items())   
@@ -595,35 +614,23 @@ class BenchmarkReport(object):
 
 
 def generate_benchmark_report(benchmark_report,f_name):
-    
-    report_cards = construct_benchmark_card(benchmark_report)
-    
-    txttst = """
-<html>
-    <head>
-    <link rel="stylesheet" href="bootstrap.css">
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="datatables.css">
-    </head>
-    <body>
-    </div>
-        <div class="row">
-            <div class="container"  style="padding-top:50px;">
-                <div class="row">
-                {}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    </body>
-    <script src="jquery-3.3.1.js"></script>
-    <script src="main.js"></script>
-    <script src="datatables.js"></script>
-</html>""".format(report_cards)
+    globals()['benchmark_files'].append(f_name)
+    report_cards,plot_script = construct_benchmark_card(benchmark_report)
+    stylesheet,script = generate_source()
+    title = construct_html_object('title',f_name)
+    head = construct_html_object('head',stylesheet)
+    row_content = construct_html_object('div',report_cards,{'klass':{'row' : True}})
+    container = construct_html_object('div',row_content,{"style" : "padding-top:50px;",'klass' : {"container" : True, "col-md-10" : True, "offset-1" : True}})
+    row = construct_html_object('div',container,{"klass" :{"row" : True}})
+    nav = HTMLElements(f_name)
+    nav = nav.nav()
+    body = construct_html_object("body",[nav,row])
+    content = [title,head,body] + script + plot_script
+    report = construct_html_object("html",content)
+    txttst = report.build()
 
     f_name = os.path.join(os.getcwd(),f_name)
-    generate_file(f_name,txttst)
+    generate_file(f_name,indent(txttst))
 
 class BenchmarkData(object):
 
@@ -631,6 +638,7 @@ class BenchmarkData(object):
     url = None
     dataset_name = "NoName"
     is_dictionary = False
+    failures = None
 
     def write_data(self,data,is_processed_data=False):
         temp_headers = list()
@@ -682,11 +690,14 @@ class HTMLObject(object):
     def configure_klass(self):
         klass = self.attribute.get('klass',None)
         if klass:
-            klass_list = [key for key,value in klass.items() if value]
-            klass_str = ""
-            for item in klass_list:
-                klass_str+= item + " "
-            self.attribute['klass'] = klass_str
+            if isinstance(klass,dict):
+                klass_list = [key for key,value in klass.items() if value]
+                klass_str = ""
+                for item in klass_list:
+                    klass_str+= item + " "
+                self.attribute['klass'] = klass_str
+            else:
+                klass_str = klass
             return klass_str
         else:
             return ""
@@ -732,7 +743,13 @@ class DataTable(object):
         }
     }
 
-    def __init__(self,raw_data):
+    def __init__(self,raw_data,overattr={}):
+        
+        if overattr:
+            self.DEFAULT_ATTRIBUTE['table'] = overattr
+        else:
+            self.DEFAULT_ATTRIBUTE = {"table":{"klass":{"table":True,"table-sm":True,"table-bordered":True,"table-list-search":True},"id":"sumTable"}}
+        self.table_id = self.DEFAULT_ATTRIBUTE['table']['id']
         self.raw_datasets = dict()
         self.raw_data = dict()
         self.raw_head = list()
@@ -779,8 +796,15 @@ class DataTable(object):
         tmp['klass'] = klass
         return tmp
 
+    def construct_script(self,table_id=None):
+        if not table_id:
+            table_id = self.table_id
+        script = "$('#{}').DataTable();$('div.dataTables_length label').addClass('hidden');".format(table_id)
+        object_script = construct_html_object('script',script) 
+        return object_script
 
-    def construct_table_object(self):
+
+    def construct(self):
         cell_data = self.prepare_cell_data()
         attr = self.prepare_html_attr()
         head = self.raw_head
@@ -869,16 +893,6 @@ class DataReport(object):
         return HTMLObject(result)
 
 
-    def generate_code(self,data):
-        
-        data = convert_new_line_to_br(data)
-        obj = construct_html_dict('code',data)
-        obj = HTMLObject(obj)
-
-        o_pre = construct_html_dict('pre',obj)
-        o_pre = HTMLObject(o_pre)
-        return o_pre
-
     def construct(self):
         
         card_title = self.identity.get('test_name','Untitled')
@@ -901,7 +915,7 @@ class DataReport(object):
                 elif not value:
                     continue   
                 value = convert_new_line_to_br(value)
-                o_code = self.generate_code(value)
+                o_code = generate_code(value)
                 key_title = case_conversion(key)
                 key_title = construct_html_dict('b',case_conversion(key_title))
                 key_title = HTMLObject(key_title)
@@ -926,7 +940,7 @@ class DataReport(object):
                 value = json.dumps(value)
             elif not value:
                 continue
-            value = self.generate_code(value)
+            value = generate_code(value)
             li = construct_html_dict('li',[key,value])
             li = HTMLObject(li)
             card_response.append(li)
@@ -952,9 +966,9 @@ class DataChart(BenchmarkData):
 
     canvas_elements = dict()
     plot_configuration = dict()
-    DEFAULT_DATASETS_CONFIG = { "scatter" : {"borderWidth" : 1 , "pointRadius":5 , "pointHoverRadius" : 7}
+    DEFAULT_DATASETS_CONFIG = { "scatter" : {"borderWidth" : 1 , "pointRadius":5 , "pointHoverRadius" : 7, "pointBackgroundColor" : "rgb(71, 134, 237)"}
                                 }
-    DEFAULT_OPTIONS = {"scatter" : { "scales" : { "yAxes": [{"ticks" : { "beginAtZero" : True}}], "xAxes" : [{"ticks" : {"stepSize" : 1}}]}},
+    DEFAULT_OPTIONS = {"scatter" : {},
                        "bar" : {"scales":{"xAxes":[{"barPercentage":0.5,"barThickness":6,"maxBarThickness":8,"minBarLength":2,"gridLines":{"offsetGridLines":True}}]}}}
 
     def __init__(self,obj_data, **kwargs):
@@ -972,8 +986,8 @@ class DataChart(BenchmarkData):
     def construct_script(self):
         conf = copy(self.plot_configuration)
         mychart = self.chart_name
-        content = "var ctx = document.getElementById('{}').getContext('2d');var {} = new Chart(ctx,{})".format(mychart,mychart,conf)
-        script = construct_html_dict("script",content)
+        content = "var ctx = document.getElementById('{}').getContext('2d'); var {} = new Chart(ctx,{}); ".format(mychart,mychart,conf)
+        script = construct_html_dict("script",indent(content))
         script = HTMLObject(script)
         return script
 
@@ -1014,12 +1028,13 @@ class DataChart(BenchmarkData):
         tmp['label'] = self.chart_name
         tmp = {**self.DEFAULT_DATASETS_CONFIG[chart_type],**tmp}
         options = copy(self.DEFAULT_OPTIONS[chart_type])
-        
-        configurated_chart = {"type":chart_type,"data" : { "labels" : labels, "datasets":[tmp]},"options":options}
+        label = [i+1 for i in range(0,len(self.chart_data))]
+        configurated_chart = {"type":'line',"data" : { "labels" : label, "datasets":[tmp]},"options":options}
         return configurated_chart
 
 
     def plot_graph(self):
+        self.parse_canvas_element()
         attr = copy(self.canvas_elements)
         default = construct_html_dict("p","Your browser does not support the canvas element.")
         default = HTMLObject(default)
@@ -1180,3 +1195,14 @@ def generate_source():
             script.append(tmp)
     
     return stylesheet,script
+
+def generate_code(data):
+    
+    data = convert_new_line_to_br(data)
+    obj = construct_html_dict('code',data)
+    obj = HTMLObject(obj)
+
+    o_pre = construct_html_dict('pre',obj)
+    o_pre = HTMLObject(o_pre)
+    return o_pre
+
