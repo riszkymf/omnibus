@@ -1,7 +1,7 @@
 - config:
   - desc: Configuration for Record Endpoint Test
   - testset: "Record Endpoint"
-  - url: "http://127.0.0.1:6968"
+  - url: "http://127.0.0.1:6968/"
   - flask : {path: app , name: create_app}
   - headers: {'Content-Type': 'application/json'}
   - variable_binds: {'mock_zone': 'test.com', 'type1': 'CNAME', 'type2' : 'SRV', 'ttlval' : '1800'}

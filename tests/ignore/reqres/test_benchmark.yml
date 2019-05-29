@@ -1,0 +1,47 @@
+- config:
+  - desc: configuration for test set
+  - testset: "TTL Endpoint"
+  - scope: configuration working scope
+  - group: "TTL Endpoint"
+  - url: "https://reqres.in/"
+  - generator: 
+    - namegen : {type : random_text, length: 5}
+    - jobgen  : {type: random_text, length: 7}
+
+- benchmark: 
+  - name: "Listing Users"
+  - endpoint: "api/users?page=2"
+  - method: 'GET'
+  - benchmark_runs: '100'
+  - concurrency : 10
+  - metrics:
+    - total_time
+    - total_time: mean
+    - total_time: median
+    - total_time: std_deviation
+    - size_download
+    - speed_download
+    - speed_download: mean_harmonic
+    - namelookup_time
+    - connect_time
+    - pretransfer_time
+    - starttransfer_time
+    - redirect_time
+    - request_size
+    - num_connects
+
+- benchmark: 
+  - name: "Create Users"
+  - endpoint: "api/users"
+  - method: 'POST'
+  - generator_binds: { name: namegen, job: jobgen }
+  - headers: {template: {'Content-Type': 'application/json'}}
+  - warmup_runs: 0
+  - benchmark_runs: '100'
+  - concurrency : 2
+  - metrics:
+    - total_time
+    - total_time: mean
+    - total_time: median
+    - size_download
+    - speed_download

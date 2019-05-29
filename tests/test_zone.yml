@@ -3,7 +3,7 @@
   - testset: "Creating Zone"
   - group: "Create Zone, Record and Content"
   - scope: configuration working scope
-  - url: "http://127.0.0.1:6968"
+  - url: "http://127.0.0.1:6968/"
   - flask : {path: app , name: create_app}
   - variable_binds: {'mock_zone': 'test.com'}
 - test: 

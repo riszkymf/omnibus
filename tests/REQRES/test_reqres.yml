@@ -1,0 +1,34 @@
+- config:
+  - desc: Configuration for Reqres Endpoint Test
+  - testset: "Reqres Endpoints"
+  - url: "https://reqres.in/"
+  - headers: {'Content-Type': 'application/json'}
+  - variable_binds: {'firstname': 'John', 'lastname': 'Doe'}
+- test: 
+  - name: "TestListUsers"
+  - endpoint: 'api/users?page=2'
+  - method: "GET"
+  - group : "Get"
+  - headers: {'Content-Type': 'application/json'}
+  - extract_binds: 
+      - 'name' : {'jmespath' : 'data[*].first_name'}
+  - validators:
+      - assertTrue: {jmespath: 'data', test: exists }
+      - compare: {jmespath: 'data[1].first_name', comparator: "eq", expected: 'Charles'}
+- test:
+  - name: "GetFailed404"
+  - endpoint: 'api/unknown/23'
+  - method: "GET"
+  - headers: {'Content-Type': 'application/json'}
+  - group: "Get"
+  - expected_status: [404]
+- test:
+  - name: "CreateName"
+  - endpoint: 'api/users'
+  - method: "POST"
+  - group: "Post"
+  - headers: {'Content-Type': 'application/json'}
+  - body: { template: '{"name": "$firstname", "job": "bard"}'}
+  - expected_status: [200,201]
+  - validators:
+      - compare: {jmespath: 'name', comparator: "eq", expected: 'John'}

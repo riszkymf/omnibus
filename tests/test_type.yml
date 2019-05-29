@@ -2,7 +2,7 @@
   - desc: configuration for test set
   - testset: "TYPE Endpoint"
   - scope: configuration working scope
-  - url: "http://127.0.0.1:6968"
+  - url: "http://127.0.0.1:6968/"
   - endpoint: "api/type"
   - flask : {path: app , name: create_app}
   - headers: {'Content-Type': 'application/json'}

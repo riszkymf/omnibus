@@ -3,10 +3,10 @@
   - testset: "TTL Endpoint"
   - scope: configuration working scope
   - group: "TTL Endpoint"
-  - url: "http://127.0.0.1:6968"
+  - url: "http://127.0.0.1:6968/"
   - endpoint: "api/ttl"
   - headers: {'Content-Type': 'application/json'}
-  - variable_binds: {'mock_ttl': "6600", 'urlt' : "http://127.0.0.1:6968"}
+  - variable_binds: {'mock_ttl': "6600", 'urlt' : "http://127.0.0.1:6968/"}
   - auth: { bearer : {"token" : "test_bearer" }}
 
 
@@ -18,8 +18,6 @@
   - expected_status : [500]
   - extract_binds: 
       - 'id_ttl' : {'jmespath' : 'message.id'}
-  - validators:
-      - assertTrue: {jmespath: 'message.id', test: exists }
 - test: 
   - name: "TestInputTTLFails"
   - method: "POST"
