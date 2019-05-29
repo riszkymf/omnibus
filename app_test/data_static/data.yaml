@@ -1,0 +1,6 @@
+- identity: {email: JohnDoe@gmail.com, firstname: John, id: 1, lastname: Doe}
+- identity: {email: House@gmail.com, firstname: Gregory, id: 2, lastname: House}
+- identity: {email: JoeQuimby@gmail.com, firstname: Joe, id: 3, lastname: Quimby}
+- identity: {email: Krusty@gmail.com, firstname: Herschel, id: 4, lastname: Krustofsky}
+- identity: {email: Smithers@gmail.com, firstname: Waylon, id: 5, lastname: Smithers}
+- identity: {email: Cartman@gmail.com, firstname: Eric, id: 6, lastname: Cartman}
