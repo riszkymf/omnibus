@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <title>Index - My Webpage</title>
+    
+    <link rel="stylesheet" href="src/css/Chart.css"/>
+    
+    <link rel="stylesheet" href="src/css/bootstrap.css"/>
+    
+    <link rel="stylesheet" href="src/css/main.css"/>
+    
+    <link rel="stylesheet" href="src/css/datatables.css"/>
+    
+    
+</head>
+<body>
+    
+    <nav class="navbar navbar-dark bg-light justify-content-between ">
+    <a class="navbar-brand ">test-template.html : 100%</a>
+    <a href="index.html" style="color:black" class="navbar-brand right ">Back to Index</a>
+        <form>
+            <button id="filterSuc" class="button btn-success btn-small buttons-right ">Hide Succes</button>
+            <button id="filterFail" class="button btn-danger btn-small buttons-right ">Hide Fail</button>
+        </form>
+    </nav>
+
+    <div id="content">
+<div class="row">
+    <div class="container">
+  
+    <div class="col-md-10 offset-md-1">
+    <table id="sumTable" class="table table-sm table-list-search table-bordered table-list-search dataTable">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Test Group</th>
+                <th>Method</th>
+                <th>URL</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        
+        
+            
+    <tr class="clickable-row odd" data-url="#GET_ALL">
+    <td> GET</td>
+    <td> TESTGET</td>
+    <td> GET_ALL</td>
+    <td> Success</td>
+    <td> www.google.com</td>
+    </tr>
+    
+            
+            
+            
+        
+            
+    <tr class="table-danger clickable-row even" data-url="#GET_ALL">
+    <td> GET_FAILED</td>
+    <td> TESTGET</td>
+    <td> GET_ALL</td>
+    <td> Failed</td>
+    <td> www.facebook.com</td>
+    </tr>
+    
+            
+        
+            
+    <tr class="clickable-row odd" data-url="#GET_None">
+    <td> GET_3</td>
+    <td> TESTGET</td>
+    <td> GET_None</td>
+    <td> Success</td>
+    <td> www.googles.com</td>
+    </tr>
+    
+            
+        
+        </tbody>
+    </table>
+    <h1>
+
+
+    <h4 style="padding-top: 15px; padding-bottom:15 px;">Group  : TESTGET </h4>
+    <hr>
+    
+    
+
+
+
+<div id="GET_ALL" class="card col-12 success">
+    <span class="card-body">
+        <h5 class="card-title">GET_ALL<span class="badge badge-success " style="margin-left : 15px;">Passed</span></h5>
+        <ul>
+        <li><b>Method : </b> GET</li>
+        <li><b>URL : </b> www.google.com</li>
+        <li><b>Expected Status : </b> GET</li>
+        </ul>
+    </span>
+</div>
+    
+    
+
+
+
+<div id="GET_ALL" class="card col-12 bg-danger failed">
+    <span class="card-body">
+        <h5 class="card-title">GET_ALL<span class="badge badge-danger" style="margin-left : 15px;">Failed</span></h5>
+        <ul>
+        <li><b>Method : </b> GET_FAILED</li>
+        <li><b>URL : </b> www.facebook.com</li>
+        <li><b>Expected Status : </b> GET_FAILED</li>
+        </ul>
+    </span>
+</div>
+    
+    
+
+
+
+<div id="GET_None" class="card col-12 success">
+    <span class="card-body">
+        <h5 class="card-title">GET_None<span class="badge badge-success " style="margin-left : 15px;">Passed</span></h5>
+        <ul>
+        <li><b>Method : </b> GET_3</li>
+        <li><b>URL : </b> www.googles.com</li>
+        <li><b>Expected Status : </b> GET_3</li>
+        </ul>
+    </span>
+</div>
+    
+</h1>
+    </div>
+
+  </div>
+</div>
+</div>
+    <div id="footer">
+        
+        &copy; Copyright 2008 by <a href="http://domain.invalid/">you</a>.
+        
+    </div>
+</body>
+
+
+<script src="src/js/jquery-3.3.1.js"></script>
+
+<script src="src/js/datatables.js"></script>
+
+<script src="src/js/Chart.js"></script>
+
+<script src="src/js/main.js"></script>
+
+
+</html>

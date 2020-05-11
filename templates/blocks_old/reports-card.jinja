@@ -1,0 +1,47 @@
+{% macro card_report(test_summary,failed) -%}
+{% if failed == true %}
+{% set badge = '<span class="badge badge-danger" style="margin-left : 15px;">Failed</span>' %}
+{% set card_class = 'bg-danger failed' %}
+{% elif failed == false %}
+{% set badge = '<span class="badge badge-success " style="margin-left : 15px;">Passed</span>' %}
+{% set card_class = 'success' %}
+{% endif %}
+<div id="{{test_summary.test_name}}" class="card col-12 {{card_class}}">
+    <span class="card-body">
+        <h5 class="card-title">{{test_summary.test_name}}{{badge}}</h5>
+        <ul>
+        <li><b>Method : </b> {{test_summary.summary.method|upper}}</li>
+        <li><b>URL : </b> {{test_summary.summary.url}}</li>
+        <li><b>Expected Status : </b> {{test_summary.summary.expected_status}}</li>
+        </ul>
+        <h5 class="card-title">Request</h5>
+        <ul>
+        {% for key,value in test_summary.request_details %}
+        <li>
+            <b>{{key}}</b>
+            <pre><code>{{val}}</code></pre>
+        </li>
+        {% endfor %}
+        </ul>
+                <h5 class="card-title">Request</h5>
+        <ul>
+        {% for key,value in test_summary.response_details %}
+        {% if value|length %}
+        <li>
+            <b>{{key}}</b>
+            <pre><code>{{val}}</code></pre>
+        </li>
+        {% endif %}
+        {% endfor %}
+        </ul>
+    </span>
+</div>
+{%- endmacro %}
+
+{% for group in groups %}
+    <h4 style="padding-top: 15px; padding-bottom:15 px;">Group  : {{group}} </h4>
+    <hr>
+    {% for reports in test_reports %}
+    {{ card_report(reports,reports.is_failed) }}
+    {% endfor %}
+{% endfor %}

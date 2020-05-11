@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <title>{% block title %}{% endblock %} - My Webpage</title>
+    {% for style in stylesheet %}
+    <link rel="stylesheet" href="src/css/{{style}}"/>
+    {% endfor %}
+    {% endblock %}
+</head>
+<body>
+    {% block nav %}
+    {% endblock %}
+    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="footer">
+        {% block footer %}
+        Omnibus Report
+        {% endblock %}
+    </div>
+</body>
+{% block scripts %}
+{% for script in scripts %}
+<script src="src/js/{{script}}"></script>
+{% endfor %}
+{% if test_type == 'benchmark' %}
+{% for report in test_reports %}
+<script>$('#{{report.summary.name}}_table').DataTable( {
+        responsive: true
+    });$('div.dataTables_length label').addClass('hidden');</script>
+    {% for chart in report.data_chart %}
+        <script>
+        var ctx = document.getElementById('{{report.summary.name}}_{{chart.name}}').getContext('2d');
+        var {} = new Chart(ctx,{{chart.config}}); 
+        </script>
+    {% endfor %}
+{% endfor %}
+{% endif %}
+{% endblock %}
+</html>

@@ -1,0 +1,45 @@
+{% macro summary_row(test_reports,cycle) -%}
+    {% set test_summary = test_reports.summary %}
+    {% if test_summary.status == false %}
+    <tr class="table-danger clickable-row {{cycle}}" data-url="#{{test_summary.test_name}}">
+    <td> {{test_summary.test_name}}</td>
+    <td> {{test_summary.group}}</td>
+    <td> {{test_summary.method}}</td>
+    <td> {{test_summary.url}}</td>
+    <td> {{test_summary.status}}</td>
+    </tr>
+    {% else %}
+    <tr class="clickable-row {{cycle}}" data-url="#{{test_summary.test_name}}">
+    <td> {{test_summary.test_name}}</td>
+    <td> {{test_summary.group}}</td>
+    <td> {{test_summary.method}}</td>
+    <td> {{test_summary.url}}</td>
+    <td> {{test_summary.status}}</td>
+    </tr>
+    {% endif %}
+{%- endmacro %}
+    <div class="col-md-10 offset-md-1">
+    <table id="sumTable" class="table table-sm table-list-search table-bordered table-list-search dataTable">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Test Group</th>
+                <th>Method</th>
+                <th>URL</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set groups = [] %}
+        {% for test_report in test_reports %}
+            {{ summary_row(test_report,loop.cycle('odd','even'))}}
+            {% if test_report.summary.group not in groups %}
+            {% set groups = groups.append(test_report.summary.group) %}
+            {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% include "reports-card.jinja" %}
+
+

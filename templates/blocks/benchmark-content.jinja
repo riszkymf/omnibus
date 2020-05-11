@@ -1,0 +1,90 @@
+
+{%- macro benchmark_table(report) -%}
+    <table class="table table-sm dataTable no-footer display compact" id="{{report.summary.name}}_table" style="width:100%">
+    <thead>
+    <tr>
+    {% set bench_metrics = [] %}
+        {% for key in report.benchmark_results.results.keys() -%}
+        <th> {{key|underscore2space}} </th>
+        {% set bench_metrics = bench_metrics.append(key) %}
+        {%- endfor %}
+    </tr>
+    </thead>
+    <tbody>
+    {% set len = report.benchmark_results['results'][bench_metrics[0]] %}
+    {% for i in range(len|length) -%}
+    <tr>
+        {%- for key in bench_metrics -%}
+            <td> {{report.benchmark_results.results[key][i]}} </td>
+        {%- endfor -%}
+    </tr>
+    {%- endfor %}
+    </tbody>
+    </table>
+{%- endmacro -%}
+
+{%- macro benchmark_details(report) -%}
+<pre>
+    <code>
+    ================================ Report Summary ======================================
+    Name : {{report.summary.name}}
+    URL  : {{report.summary.url}}
+    Benchmark runs  : {{report.summary.benchmark_runs}}
+    Failure : {{report.benchmark_results.failure}}
+    Concurrency : {{report.summary.concurrency}}
+
+    ================================ Metrics Aggregates ==================================
+{%- for metric,results in report.benchmark_results.aggregates.items() %}
+    {{metric}}  :
+    {% for aggs,val in results.items() -%}
+    &nbsp;&nbsp;&nbsp;&nbsp;{{aggs}}  :  {{val}}
+    {% endfor -%}
+{% endfor -%}
+    </code>
+</pre>
+{%- endmacro -%}
+
+{%- macro benchmark_result_graphs(report) -%}
+{% for key in report.benchmark_results.results.keys() %}
+<canvas id="{{report.summary.name}}_{{key}}">
+<p> Your browser does not support canvas element </p>
+</canvas>
+{% endfor %}
+{%- endmacro -%}
+
+{% for report in test_reports -%}
+<div id="{{report.summary.name}}" class="card col-12" style="margin-top: 15px;">
+    <span class="card-body">
+        <div class="col-10">
+            <span class="card-title">
+                <h3 style="text-transform: capitalize;" >{{report.summary.name}}</h3>
+            </span>
+        </div>
+        <hr>
+        <div class="col-10">
+            {{benchmark_details(report)}}
+        </div>
+        <hr>
+        <div class="col-12" >
+        <span>
+            <h5>Result Table</h5>
+        </span>
+            {{benchmark_table(report)}}
+        </div>
+        <hr>
+        <div class="col-12">
+        <span class="row">
+            <span class="card-graphs-head col-6">
+                <h5 class=>Result Graph</h5>
+            </span>
+            <span class="card-graphs-toggle col-6">
+                <a class="btn btn-primary btn-sm" style="float:right;" data-toggle="collapse" href="#{{report.summary.name}}_Graph" role="button" aria-expanded="false" aria-controls="collapseExample"> Toggle Graph </a>
+            </span>
+        </span>
+        <span class="collapse" id="{{report.summary.name}}_Graph">
+            {{benchmark_result_graphs(report)}}
+        </span>
+        </div>
+    </span>
+</div>
+{%- endfor %}

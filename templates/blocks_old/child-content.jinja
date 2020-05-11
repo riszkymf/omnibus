@@ -1,0 +1,19 @@
+{% extends "base.jinja" %}
+{% block title %}Index{% endblock %}
+{% block nav %}
+    <nav class="navbar navbar-dark bg-light justify-content-between ">
+    <a class="navbar-brand ">{{test.name}} : {{test.success}}%</a>
+    <a href="index.html" style="color:black" class="navbar-brand right ">Back to Index</a>
+        <form>
+            <button id="filterSuc" class="button btn-success btn-small buttons-right ">Hide Succes</button>
+            <button id="filterFail" class="button btn-danger btn-small buttons-right ">Hide Fail</button>
+        </form>
+    </nav>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="container">
+  {% include "table.jinja" %}
+  </div>
+</div>
+{% endblock %}
