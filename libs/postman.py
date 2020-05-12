@@ -2,7 +2,7 @@ import json
 import os
 import jmespath
 import yaml
-from omnibus.libs import util
+from libs import util
 
 
 def postman_convert_variables(postman_text):
@@ -82,12 +82,12 @@ def parse_postman_test(mytest):
 
     # json_path = [('name','name'),('method','request.method'),('headers','request.header'),('url','request.url.raw'),('body','request.body'),('exec',"event[?listen == 'test'].script.exec[]")]
     json_path = [('name','name'),('method','request.method'),('headers','request.header'),('url','request.url.raw'),('body','request.body'),('exec',"event[?listen == 'test'].script.exec[]")]
-    templated = {'url' : False, 'headers':False, 'body':False,' event':False}
 
     for key,path in json_path:
+        templated = {'url' : False, 'headers':False, 'body':False,' event':False}
         test_detail = dict()
-        try:
-            if key == 'body':
+        if key == 'body':
+            if jmespath.search(path,mytest) != None :
                 if parse_postman_body(jmespath.search(path,mytest)):
                     resp_body = parse_postman_body(jmespath.search(path,mytest))
                     resp_body = postman_convert_variables(resp_body)
@@ -96,37 +96,42 @@ def parse_postman_test(mytest):
                         test_detail[key] = { "template" : {resp_body['data']}}
                     else:
                         test_detail[key] = resp_body["data"]
-            elif key == 'headers':
-                for val in jmespath.search(path,mytest):
-                    tmp_dict = dict()
-                    resp_head = postman_convert_variables(val['value'])
-                    templated[key] = templated[key] or resp_head["status"]
-                    tmp_dict[val['key']] = resp_head["data"]
+        elif key == 'headers':
+            for val in jmespath.search(path,mytest):
+                tmp_dict = dict()
+                resp_head = postman_convert_variables(val['value'])
+                templated[key] = templated[key] or resp_head["status"]
+                tmp_dict[val['key']] = resp_head["data"]
+            try:
                 if templated[key]:
                     test_detail[key] = {"template" : tmp_dict}
                 else:
                     test_detail[key] = tmp_dict
-            elif key == 'exec':
-                val = jmespath.search(path,mytest)
-                test_script = parse_postman_script(val)
-                try:
-                    for x,y in test_script.items():
-                        print("KEY : ",x)
-                        print("VAL : ",y)
-                        test_detail[x] = y
-                except:
-                    pass
-            else:
-                if key in list(templated.keys()):
-                    tmp_data = postman_convert_variables(jmespath.search(path,mytest))       
-                    if tmp_data["status"]:        
-                        test_detail[key] = {"template" : tmp_data["data"]}
-                    else:
-                        test_detail[key] = tmp_data["data"]
+            except Exception:
+                pass
+        elif key == 'exec':
+            val = jmespath.search(path,mytest)
+            test_script = parse_postman_script(val)
+            try:
+                for x,y in test_script.items():
+                    test_detail[x] = y
+            except:
+                pass
+        elif key == 'url':
+            check_val = jmespath.search('request.url',mytest)
+            if isinstance(check_val,str):
+                test_detail[key] = check_val
+            elif isinstance(check_val,dict):
+                test_detail[key] = postman_convert_variables(jmespath.search(path,mytest))['data'] 
+        else:
+            if key in list(templated.keys()):
+                tmp_data = postman_convert_variables(jmespath.search(path,mytest))       
+                if tmp_data["status"]:        
+                    test_detail[key] = {"template" : tmp_data["data"]}
                 else:
-                    test_detail[key] = jmespath.search(path,mytest)                        
-        except:
-            pass
+                    test_detail[key] = tmp_data["data"]
+            else:
+                test_detail[key] = jmespath.search(path,mytest)                        
         if test_detail:
             listed_test.append(test_detail)
     return listed_test
@@ -164,5 +169,5 @@ def parse_postman_script(text):
             script.append(i)
             tmp_yaml += i + "\n"
 
-    result = yaml.load(tmp_yaml)
+    result = yaml.safe_load(tmp_yaml)
     return result

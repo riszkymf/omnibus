@@ -1,0 +1,93 @@
+{
+	"variables": [],
+	"info": {
+		"name": "REQRES",
+		"_postman_id": "167b636a-3b04-4e29-b8c9-40fd14b383b2",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "LIST USERS",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"`omnibus",
+							"    validate:",
+							"        - assertTrue: {jmespath: data.data, test: exist}",
+							"`"
+						]
+					}
+				}
+			],
+			"request": {
+				"url": {
+					"raw": "https://reqres.in/api/users?page=2",
+					"protocol": "https",
+					"host": [
+						"reqres",
+						"in"
+					],
+					"path": [
+						"api",
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "2",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": null
+			},
+			"response": []
+		},
+		{
+			"name": "CREATE",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"`omnibus",
+							"    validate:",
+							"        - assertTrue: {jmespath: data.token, test: exist}",
+							"`"
+						]
+					}
+				}
+			],
+			"request": {
+				"url": "https://reqres.in/api/register",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"eve.holt@reqres.in\",\n    \"password\": \"pistol\"\n}"
+				},
+				"description": null
+			},
+			"response": []
+		}
+	]
+}

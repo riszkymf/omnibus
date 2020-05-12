@@ -2,11 +2,12 @@ import os
 import shutil
 import yaml
 
-from libs.util import ROOT_PATH,load_yaml,generate_file
+from libs.util import ROOT_PATH,load_yaml,generate_file,load_json
 from libs.content_parser import run_testsets,run_benchmarksets,parse_file
 from docopt import docopt
 from .base import Base
 from termcolor import colored
+from libs import postman as pm
 
 
 
@@ -21,6 +22,7 @@ class Run(Base):
     -h --help               Print Usage
     -f FILENAME             Test File Configuration
     -d DUMPFILE             Set Dump Location
+    -p --pm                 Use Postman File
     """
 
     def execute(self):
@@ -42,16 +44,24 @@ class Run(Base):
         filename = FILE_LOCATION.split("/")[-1]
         filename = filename.split(".")[0]
 
-        try:
-            config = load_yaml(FILE_LOCATION)
-            if not isinstance(config,list):
-                raise ValueError("Wrong YAML Configuration")
-        except FileNotFoundError:
-            print(colored("File not found: {}".format(FILE_LOCATION),"red"))
-            exit()
-        except Exception as e:
-            print(colored(str(e),"red"))
-            exit()
+        if self.args['--pm']:
+            if self.args['blackbox']:
+                config = pm.parse_postman(FILE_LOCATION)
+            else:
+                print(colored("Postman Configuration can only be used on blackbox testing","yellow"))
+                print(colored("Exiting","yellow"))
+                exit()
+        else:
+            try:
+                config = load_yaml(FILE_LOCATION)
+                if not isinstance(config,list):
+                    raise ValueError("Wrong YAML Configuration")
+            except FileNotFoundError:
+                print(colored("File not found: {}".format(FILE_LOCATION),"red"))
+                exit()
+            except Exception as e:
+                print(colored(str(e),"red"))
+                exit()
 
         if not os.path.exists(DUMP_LOCATION):
             try:
@@ -71,7 +81,6 @@ class Run(Base):
             exit()
 
         test_configs = parse_file(config,FILE_LOCATION)
-        print(action)
         if action == 'benchmark':
             fail,report,html = run_benchmarksets(test_configs)
         elif action == 'blackbox':
