@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Simple Sidebar - Start Bootstrap Template</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="css/simple-sidebar.css" rel="stylesheet">
+  <style>
+    form.config-form ul{
+      display: block;
+      padding-inline-start: 0px;
+    }
+
+    ul li{
+      display: block;
+      padding-top: 15px;
+    }
+    .config-form{
+      padding-left:0px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="d-flex" id="wrapper">
+
+    <!-- Sidebar -->
+    <div class="bg-light border-right" id="sidebar-wrapper">
+      <div class="sidebar-heading">Start Bootstrap </div>
+      <div class="list-group list-group-flush">
+        <a href="#" class="list-group-item list-group-item-action bg-light">Dashboard</a>
+        <a href="#" class="list-group-item list-group-item-action bg-light">Shortcuts</a>
+        <a href="#" class="list-group-item list-group-item-action bg-light">Overview</a>
+        <a href="#" class="list-group-item list-group-item-action bg-light">Events</a>
+        <a href="#" class="list-group-item list-group-item-action bg-light">Profile</a>
+        <a href="#" class="list-group-item list-group-item-action bg-light">Status</a>
+      </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+      <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+        <button class="btn btn-primary" id="menu-toggle">Toggle Menu</button>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Link</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Dropdown
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="#">Action</a>
+                <a class="dropdown-item" href="#">Another action</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="#">Something else here</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="container-fluid">
+        <div class="col-10">
+        <h1 class="mt-4">Test Configuration</h1>
+        <p>The starting state of the menu will appear collapsed on smaller screens, and will appear non-collapsed on larger screens. When toggled using the button below, the menu will change.</p>
+        <br>
+        <div class="config-form col-10">
+          <form action="config_send" method="POST" id="configFrm" name="configFrm" class="config-form col-12">
+          <ul>
+          <li class="input-group col-12">
+              <input type="text" aria-required="true" placeholder="Test Name" value="" name="test-name" class="txt form-control form-control-lg">
+          </li>
+          <li class="col-7  input-group">
+            <div class="input-group-prepend">
+            <span class="input-group-text">Timeout</span>
+            </div>
+            <input class="form-control" id="configTimeout" placeholder="NONE">
+          </li>
+          <li class="col-7  input-group">
+              <div class="input-group-prepend">
+              <span class="input-group-text" aria-required="true">URL</span>
+              </div>
+              <input class="form-control" id="configURL" placeholder="NONE">
+          </li>
+          <li class="col-7 input-group">
+            <div class="input-group">
+              <select class="custom-select" id="inputGroupSelect04">
+                  <option selected>Choose...</option>
+                  <option value="1">One</option>
+                  <option value="2">Two</option>
+                  <option value="3">Three</option>
+              </select>
+              <div class="input-group-append">
+                  <button class="btn btn-outline-secondary" onclick="addFields()" type="button">Add Generators</button>
+              </div>
+            </div>
+            <ul id="generatorsConf" class="input-group">
+
+            </ul>
+          </li>
+          </ul>
+          </form>
+        </div>
+        </div>
+      </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+
+  </div>
+  <!-- /#wrapper -->
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Menu Toggle Script -->
+  <script>
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      $("#wrapper").toggleClass("toggled");
+    });
+  </script>
+  <script type='text/javascript'>
+    function addFields(){
+        // Number of inputs to create
+        var number = 1;
+        // Container <div> where dynamic content will be placed
+        var generatorsConf = document.getElementById("generatorsConf");
+        // Clear previous contents of the container
+        // Append a node with a random text
+        // Create an <input> element, set its type and name attributes
+        var input = document.createElement("input");
+        input.type = "text";
+        generatorsConf.appendChild(input);
+        // Append a line break 
+        generatorsConf.appendChild(document.createElement("br"));
+
+    }
+</script>
+</body>
+
+</html>

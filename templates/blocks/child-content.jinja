@@ -1,0 +1,28 @@
+{% extends "base.jinja" %}
+{% block nav %}
+  {% if test_type == 'endpoint' %}
+    <nav class="navbar navbar-dark bg-light justify-content-between ">
+    <a class="navbar-brand ">{{test.name}} : {{test.success}}%</a>
+    {# <a href="index.html" style="color:black" class="navbar-brand right ">Back to Index</a> #}
+        <form>
+            <button id="filterSuc" class="button btn-success btn-small buttons-right ">Hide Succes</button>
+            <button id="filterFail" class="button btn-danger btn-small buttons-right ">Hide Fail</button>
+        </form>
+    </nav>
+  {% elif test_type == 'benchmark' %}
+    <nav class="navbar navbar-dark bg-light justify-content-between ">
+    <a class="navbar-brand ">{{test.name}}</a>
+    </nav>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="container">
+  {% if test_type == 'endpoint' %}
+  {% include "table.jinja" %}
+  {% elif test_type == 'benchmark' %}
+  {% include "benchmark-content.jinja" %}
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

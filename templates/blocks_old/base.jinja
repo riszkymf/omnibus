@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <title>{% block title %}{% endblock %} - My Webpage</title>
+    {% for style in stylesheet %}
+    <link rel="{{style.rel}}" href="src/css/{{style.href}}"/>
+    {% endfor %}
+    {% endblock %}
+</head>
+<body>
+    {% block nav %}
+    {% endblock %}
+    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="footer">
+        {% block footer %}
+        &copy; Copyright 2008 by <a href="http://domain.invalid/">you</a>.
+        {% endblock %}
+    </div>
+</body>
+{% block scripts %}
+{% for script in scripts %}
+<script src="src/js/{{script}}"></script>
+{% endfor %}
+{% endblock %}
+</html>
