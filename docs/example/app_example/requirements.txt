@@ -17,4 +17,4 @@ python-dotenv==0.10.1
 Flask_And_Redis==0.7
 python_keystoneclient==3.18.0
 socketIO_client==0.7.2
-PyYAML==3.13
+PyYAML==5.4
