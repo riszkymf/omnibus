@@ -4,7 +4,7 @@ pytest==4.4.1
 jmespath==0.9.3
 coverage==4.5.2
 setuptools==40.2.0
-lxml==4.3.3
+lxml==4.6.3
 future==0.18.2
 pycurl==7.43.0.5
 requests_oauthlib==1.3.0
